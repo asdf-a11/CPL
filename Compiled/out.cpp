@@ -1,0 +1,163 @@
+
+#include <iostream>
+#include <vector>
+#include "graphics.cpp"
+#include "cplCppList.hpp"
+
+#define i32 int
+#define i16 short
+#define i8 signed char
+#define UNKNOWN int
+
+#define VARTYPE sizeof(int)
+
+void printc(i32 character){
+    std::cout << (char)character;
+}
+
+void cplMain(void);
+void (*println)(void);
+void (*printn)(i32 number);
+
+void cplMain(void)
+{
+	println = [](void)
+	{
+		UNKNOWN EXPFUNCTIONARGUMENT0;
+		EXPFUNCTIONARGUMENT0 = 10;
+		UNKNOWN EXPFUNCTIONRETURN1;
+		printc(EXPFUNCTIONARGUMENT0);
+		UNKNOWN EXPFUNCTIONARGUMENT2;
+		EXPFUNCTIONARGUMENT2 = 13;
+		UNKNOWN EXPFUNCTIONRETURN3;
+		printc(EXPFUNCTIONARGUMENT2);
+	};
+	printn = [](i32 number)
+	{
+		i32 bufferSize;
+		UNKNOWN EXPTEMPVAR0;
+		EXPTEMPVAR0 = 11;
+		bufferSize = EXPTEMPVAR0;
+		UNKNOWN EXPTEMPVAR1;
+		EXPTEMPVAR1 = bufferSize;
+		CPL_LIST<i32> buffer(EXPTEMPVAR1);
+		UNKNOWN EXPTEMPVAR2;
+		EXPTEMPVAR2 = 0;
+		buffer = EXPTEMPVAR2;
+		i32 pointer;
+		UNKNOWN EXPTEMPVAR3;
+		EXPTEMPVAR3 = 10;
+		pointer = EXPTEMPVAR3;
+		i32 runOnceFlag;
+		UNKNOWN EXPTEMPVAR4;
+		EXPTEMPVAR4 = 1;
+		runOnceFlag = EXPTEMPVAR4;
+		while(1)
+		{
+			UNKNOWN EXPVAR0;
+			i32 EXPVAR1;
+			EXPVAR1 = number != 0;
+			i32 EXPVAR2;
+			EXPVAR2 = runOnceFlag == 1;
+			EXPVAR0 = EXPVAR1 or EXPVAR2;
+			EXPVAR0 = !EXPVAR0;
+			if(EXPVAR0)
+			{
+				break;
+			};
+			i32 digit;
+			UNKNOWN EXPTEMPVAR5;
+			EXPTEMPVAR5 = number % 10;
+			digit = EXPTEMPVAR5;
+			UNKNOWN EXPTEMPVAR6;
+			EXPTEMPVAR6 = number / 10;
+			number = EXPTEMPVAR6;
+			UNKNOWN EXPFUNCTIONARGUMENT4;
+			EXPFUNCTIONARGUMENT4 = digit + 48;
+			UNKNOWN EXPFUNCTIONRETURN5;
+			printc(EXPFUNCTIONARGUMENT4);
+			UNKNOWN EXPFUNCTIONRETURN6;
+			println();
+			UNKNOWN EXPTEMPVAR7;
+			EXPTEMPVAR7 = pointer;
+			UNKNOWN EXPTEMPVAR8;
+			EXPTEMPVAR8 = digit + 48;
+			buffer = EXPTEMPVAR8;
+			UNKNOWN EXPTEMPVAR9;
+			EXPTEMPVAR9 = pointer - 1;
+			pointer = EXPTEMPVAR9;
+			UNKNOWN EXPTEMPVAR10;
+			EXPTEMPVAR10 = 0;
+			runOnceFlag = EXPTEMPVAR10;
+		};
+		UNKNOWN EXPTEMPVAR11;
+		EXPTEMPVAR11 = pointer + 1;
+		pointer = EXPTEMPVAR11;
+		while(1)
+		{
+			UNKNOWN EXPVAR3;
+			EXPVAR3 = pointer < bufferSize;
+			EXPVAR3 = !EXPVAR3;
+			if(EXPVAR3)
+			{
+				break;
+			};
+			UNKNOWN EXPFUNCTIONARGUMENT7;
+			UNKNOWN EXPINDEX7;
+			EXPINDEX7 = pointer;
+			EXPINDEX7 = EXPINDEX7 * VARTYPE;
+			EXPINDEX7 = buffer[EXPINDEX7/sizeof(UNKNOWN)];
+			EXPFUNCTIONARGUMENT7 = EXPINDEX7;
+			UNKNOWN EXPFUNCTIONRETURN9;
+			std::cout << "p " << pointer << "\n";
+			printc(EXPFUNCTIONARGUMENT7);
+			UNKNOWN EXPTEMPVAR12;
+			EXPTEMPVAR12 = pointer + 1;
+			pointer = EXPTEMPVAR12;
+		};
+	};
+	UNKNOWN EXPFUNCTIONARGUMENT10;
+	EXPFUNCTIONARGUMENT10 = 356;
+	UNKNOWN EXPFUNCTIONRETURN11;
+	printn(EXPFUNCTIONARGUMENT10);
+	UNKNOWN EXPFUNCTIONRETURN12;
+	println();
+	UNKNOWN EXPTEMPVAR13;
+	EXPTEMPVAR13 = 8;
+	CPL_LIST<i32> buffer(EXPTEMPVAR13);
+	UNKNOWN EXPTEMPVAR14;
+	EXPTEMPVAR14 = 49;
+	buffer = EXPTEMPVAR14;
+	i32 counter;
+	UNKNOWN EXPTEMPVAR15;
+	EXPTEMPVAR15 = 0;
+	counter = EXPTEMPVAR15;
+	while(1)
+	{
+		UNKNOWN EXPVAR4;
+		EXPVAR4 = counter < 8;
+		EXPVAR4 = !EXPVAR4;
+		if(EXPVAR4)
+		{
+			break;
+		};
+		UNKNOWN EXPFUNCTIONARGUMENT13;
+		UNKNOWN EXPINDEX13;
+		EXPINDEX13 = counter;
+		EXPINDEX13 = EXPINDEX13 * VARTYPE;
+		EXPINDEX13 = buffer[EXPINDEX13/sizeof(UNKNOWN)];
+		EXPFUNCTIONARGUMENT13 = EXPINDEX13;
+		UNKNOWN EXPFUNCTIONRETURN15;
+		printc(EXPFUNCTIONARGUMENT13);
+		UNKNOWN EXPTEMPVAR16;
+		EXPTEMPVAR16 = counter + 1;
+		counter = EXPTEMPVAR16;
+	};
+}
+
+
+int main(){
+    cplMain();
+    return 0;
+}
+
