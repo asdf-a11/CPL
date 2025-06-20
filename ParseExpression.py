@@ -140,6 +140,7 @@ class Exp():
             self.expTokens.insert(tdx,listNameToken)
             tdx += 1
             return tdx
+        #
         while tdx < len(self.expTokens):
             if type(self.expTokens[tdx]) == Lexer.Token:
                 if self.expTokens[tdx].tokenType == "NAME":
@@ -160,6 +161,16 @@ class Exp():
                     self.expTokens.insert(tdx, e)   
                     tdx = 0            
                     continue
+                #Handle - as a single arity operator
+                if self.expTokens[tdx].tokenType == "OPERATOR":
+                    if len(self.expTokens) > tdx+2:
+                        if type(self.expTokens[tdx+1]) == Lexer.Token:
+                            if self.expTokens[tdx+1].tokenSubset == "-":
+                                e = Exp()
+                                e.expTokens = self.expTokens[tdx+1:tdx+3].copy()
+                                self.expTokens[tdx+1] = e
+                                self.expTokens.pop(tdx+2)
+
                 if self.expTokens[tdx].tokenType == "[":
                     tdx = ReplaceListWithVaraible(irList, tdx)
             tdx += 1        
@@ -215,7 +226,7 @@ class Exp():
             if type(i) == Exp:
                 expResultList.append(IR.Variable(expTemp=True))
                 i.resultVar = expResultList[-1]
-                instList.append(IR.Instruction("CREATE", [Types.i32Type.name, expResultList[-1].name]))
+                instList.append(IR.Instruction("CREATE", [Types.unknownType.name, expResultList[-1].name]))
                 instList += i.ToIasm(expResultList[-1].name)
         if writeInto != None:
             if len(self.expTokens) == 1:

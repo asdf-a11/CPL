@@ -1,3 +1,4 @@
+#if boolean operator then bool
 #bigger beat smaller of same style
 #float beat int
 #signed beat unsigned

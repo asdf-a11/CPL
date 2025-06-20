@@ -20,6 +20,7 @@ class Variable():
         self.dataType = dataType
         self.listSize = listSize
         self.hardSetType = False if self.dataType.name == "UNKNOWN" else True
+        pass
 class Scope():
     def __init__(self):
         self.varList = []
@@ -73,18 +74,23 @@ def GetArgumentType(argument, scopeList):
 def UpdateVarTypeFromArithmetic(argList, scopeList):
     writeIntoVar = GetVaraibleFromScopeList(argList[0], scopeList)
     type1 = GetArgumentType(argList[1], scopeList)
-    if argList[2] == "VAR_TYPE":
-        type2 = type1
+    if len(argList) >= 3:
+        if argList[2] == "VAR_TYPE":
+            type2 = type1
+        else:
+            type2 = GetArgumentType(argList[2], scopeList)
     else:
-        type2 = GetArgumentType(argList[2], scopeList)
+        type2 = None
     if writeIntoVar.hardSetType == False:
         isStyleFloat = writeIntoVar.dataType.style == "float"
         isStyleFloat = isStyleFloat or type1.style == "float"
-        isStyleFloat = isStyleFloat or type2.style == "float"
+        if type2 != None:
+            isStyleFloat = isStyleFloat or type2.style == "float"
 
         isUnsigned = writeIntoVar.dataType.style == "unsigned"
         isUnsigned = isUnsigned and type1.style == "unsigned"
-        isUnsigned = isUnsigned and type2.style == "unsigned"
+        if type2 != None:
+            isUnsigned = isUnsigned and type2.style == "unsigned"
 
         if isStyleFloat: style = "float"
         else:
@@ -93,7 +99,10 @@ def UpdateVarTypeFromArithmetic(argList, scopeList):
 
         writeIntoVatSize = 0 if writeIntoVar.dataType.sizeInBytes == None else writeIntoVar.dataType.sizeInBytes
 
-        maxSize = max(type1.sizeInBytes, type2.sizeInBytes)
+        if type2 != None:
+            maxSize = max(type1.sizeInBytes, type2.sizeInBytes)
+        else:
+            maxSize = type1.sizeInBytes
         maxSize = max(maxSize, writeIntoVatSize)
 
         writeIntoVar.dataType = Types.GetTypeByStyleAndSize(style, maxSize)

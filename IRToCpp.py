@@ -56,13 +56,20 @@ class Converter():
     def SingleOperandOperation(self, instList, instIdx, argList):
         code = ""
         opSymbol = instList[instIdx].name
-        code += self.tabs + argList[0] + " = " + opSymbol + argList[0] + ";\n"
+        code += self.tabs + argList[0] + " = " + opSymbol + argList[1] + ";\n"
         return code
     def DoubleOperandOperation(self, instList, instIdx, argList):
         code = ""
         opSymbol = instList[instIdx].name
         code += self.tabs + argList[0] + " = " + argList[1] + " "+opSymbol+" " + argList[2] + ";\n"
         return code
+    def DoubleOrSingleOperandOperation(self, instList, instIdx, argList):
+        if len(argList) == 3:
+            return self.DoubleOperandOperation(instList, instIdx, argList)
+        elif len(argList) == 2:
+            return self.SingleOperandOperation(instList, instIdx, argList)
+        else:
+            raise Exception("Invalid number of args for operand")
     def If(self, instList, instIdx, argList):
         return self.tabs + "if(" + argList[0] + ")\n"
     def EndIf(self, instList, instIdx, argList): return ""
@@ -127,7 +134,7 @@ class Converter():
             ["ENDREPEAT", self.EndRepeat],
             ["BREAK", self.Break],
             ["+", self.DoubleOperandOperation],
-            ["-", self.DoubleOperandOperation],
+            ["-", self.DoubleOrSingleOperandOperation],
             ["==", self.DoubleOperandOperation],
             ["!=", self.DoubleOperandOperation],
             ["CREATE_FUNCTION", self.CreateFunction],

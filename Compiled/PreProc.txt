@@ -1,8 +1,17 @@
+
 fn void cplMain(){
-	f32 a = 0.0;
-	f32 b = 1.0;
-	f32 c = b + a;
-	printf(c);
+	i32 counter = 1;
+	i32 sign = -1;
+	f32 pi = 4;
+	while counter < 100{
+		pi = pi + 4.0/(1+counter*2) * sign;
+		sign = sign * (-1);
+
+		counter = counter + 1;
+	}
+	printf(pi);
+	printc(10);
+	printc(13);
 
 	
 }
