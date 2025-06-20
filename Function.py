@@ -44,7 +44,7 @@ class Function():
         for i in self.convertedIRList:
             f.write(i + "\n")
         f.close()
-    def PrintTokens(self):
+    def PrintTokens(self) -> None:
         print("fn ", end = "")
         for i in self.returnTypeList:
             print(i, end = " ") 
@@ -56,4 +56,67 @@ class Function():
         print(") { ")
         Lexer.PrintTokenList(self.tokenList)
         print("}")
+    def GetFunctionReturnType(self,tokenList, idx) -> int:
+        #fn i32, i8, i8 functionName(i32 a, b){}
+        errMsg = "Failed to find close of function when finding types"
+        returnTypeList = []
+        while 1:
+            if il(tokenList, idx, errMsg).tokenType not in ["NAME", "TYPE"]:
+                raise Exception("Expected a name or type in function return type list")
+            nextToken = il(tokenList, idx, errMsg)
+            returnTypeList.append(nextToken.tokenSubset)
+            if il(tokenList, idx + 1, errMsg).tokenSubset != ",":
+                break
+            idx += 1
+        if len(returnTypeList) == 0:
+            raise Exception("Function must have a return type")
+        self.returnTypeList = returnTypeList
+        return idx + 1
+    def GetFunctionParameterList(self,tokenList, idx) -> int:
+        typeList = []
+        nameList = []
+        if tokenList[idx].tokenType != "(":
+            raise Exception("Expected open bracked")
+        idx += 1
+        if tokenList[idx].tokenType == ")":
+            return [],[], idx + 1
+        while 1:
+            if tokenList[idx].tokenType != "TYPE":
+                if len(typeList) == 0:
+                    raise Exception("Expecteed a type here")
+                typeList.append(typeList[-1])
+                idx -= 1
+            else:
+                typeList.append(tokenList[idx].tokenSubset)
+            idx += 1
+            if tokenList[idx].tokenType != "NAME":
+                raise Exception("Expected name here")
+            nameList.append(tokenList[idx].tokenSubset)
+            idx += 1
+            if tokenList[idx].tokenType != ",":
+                if tokenList[idx].tokenType == ")":
+                    break
+                raise Exception("Expected }")
+            idx += 1
+        self.perameterNameList = nameList
+        self.perameterTypeList = typeList
+        return idx+1
+    def ReadInScope(self,tokenList, idx) -> int:
+        if tokenList[idx].tokenType != "{":
+            raise Exception("Expected a { at the start of scope when readin in")
+        idx += 1
+        out = []
+        scopeCounter = 0
+        errMsg = "Failed to find end of scope before end of file"
+        while 1:
+            if il(tokenList, idx, errMsg).tokenType == "{":
+                scopeCounter += 1
+            if tokenList[idx].tokenType == "}":
+                if scopeCounter == 0:
+                    break
+                scopeCounter -= 1
+            out.append(tokenList[idx])
+            idx += 1
+        self.tokenList = out
+        return idx
 

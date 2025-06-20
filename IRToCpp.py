@@ -183,6 +183,9 @@ void printc(i32 character){
 void printf(f32 value){
     std::cout << value;
 }
+void printn(i32 value){
+    std::cout << value;
+}
 
 """
         return defines

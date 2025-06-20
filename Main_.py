@@ -1,6 +1,4 @@
-#To beat 5500
 import Lexer
-import FirstLayerParser
 import IR
 import IRConversion
 import os
@@ -8,6 +6,7 @@ import time
 import IROptimise
 import PreProcessor
 import Settings
+import Function
 
 def Compile(sourceCode, outputPreProcessedCode):    
     startPreProc = time.time()
@@ -25,12 +24,16 @@ def Compile(sourceCode, outputPreProcessedCode):
     tokenList = Lexer.RemoveWhiteSpace(tokenList)
     Lexer.PrintTokenList(tokenList)
     print("Lexing took -> ", time.time() - startLexingTime)
-    functionList = FirstLayerParser.FirstLayerParse(tokenList)
-    for f in functionList:
-        f.GenerateIR()
+    #functionList = FirstLayerParser.FirstLayerParse(tokenList)
+    #for f in functionList:
+    #    f.GenerateIR()
     wholeProgramIR = []
-    for f in functionList:
-        wholeProgramIR += f.IRList
+    wholeProgramFunction = Function.Function(
+        name="cplMain"
+    )
+    wholeProgramFunction.tokenList = tokenList
+    wholeProgramFunction.GenerateIR()
+    wholeProgramIR = wholeProgramFunction.IRList
     
     programIR = IR.PrintInstList(wholeProgramIR, ret=True)
     #

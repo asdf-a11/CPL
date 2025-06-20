@@ -1,7 +1,6 @@
 from Util import *
 import ParseExpression
 import IR
-import FirstLayerParser
 import Function
 
 tempVarNameNumber = 0
@@ -216,17 +215,17 @@ def IsListAsign(idx, instList, tokenList):
 def IsCreateFunction(idx, instList, tokenList):
     errMsg = "Ran out of tokens to check if it is a new function being created"
     if il(tokenList,idx,errMsg).tokenType == "FN":
-        returnTypeList, idx = FirstLayerParser.GetFunctionReturnType(tokenList, idx + 1)
+        f = Function.Function()
+        idx = f.GetFunctionReturnType(tokenList, idx + 1)
         if il(tokenList,idx,errMsg).tokenType != "NAME":
             raise Exception("Expected a name for the function")        
-        functionName = tokenList[idx].tokenContent
-        typeList, nameList, idx = FirstLayerParser.GetFunctionParameterList(tokenList, idx  + 1) 
-        functionContents, idx = FirstLayerParser.ReadInScope(tokenList, idx)
+        f.name = tokenList[idx].tokenContent
+        idx = f.GetFunctionParameterList(tokenList, idx  + 1) 
+        idx = f.ReadInScope(tokenList, idx)
         idx += 1 #step over last }
 
-        function = Function.Function(functionName, returnTypeList, typeList, nameList, functionContents)
-        function.GenerateIR()
-        instList += function.IRList
+        f.GenerateIR()
+        instList += f.IRList
 
         return True, idx
     return False, 0
