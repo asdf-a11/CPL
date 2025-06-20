@@ -7,14 +7,16 @@ import os
 import time
 import IROptimise
 import PreProcessor
+import Settings
 
-def Compile(sourceCode):    
+def Compile(sourceCode, outputPreProcessedCode):    
     startPreProc = time.time()
     sourceCode = PreProcessor.PreProcess(sourceCode)
     print("PreProc took -> ", time.time() - startPreProc)
-    f = open("Compiled\\PreProc.txt", "w")
-    f.write(sourceCode)
-    f.close()    
+    if outputPreProcessedCode:
+        f = open(f"Compiled{Settings.FILE_SEPERATOR}PreProc.txt", "w")
+        f.write(sourceCode)
+        f.close()    
     startLexingTime = time.time()
     splitList = Lexer.GenerateSplitList(sourceCode)
     tokenList = Lexer.GenerateTokenList(splitList)       
@@ -31,13 +33,15 @@ def Compile(sourceCode):
         wholeProgramIR += f.IRList
     
     programIR = IR.PrintInstList(wholeProgramIR, ret=True)
+    #
     f = open("Compiled/irCode_unOptimised.txt","w")
     f.write(programIR)
     f.close()
-    #programIR = IROptimise.PerformOperations(programIR)
-    #f = open("Compiled/irCode.txt","w")
-    #f.write(programIR)
-    #f.close()
+    #
+    programIR = IROptimise.PerformOperations(programIR)
+    f = open("Compiled/irCode.txt","w")
+    f.write(programIR)
+    f.close()
     #settingsString_x86 = "-m86 -COS"
     #outputProgram = IRConversion.Convert(programIR, "x86", settingsString_x86)
     outputProgram = IRConversion.Convert(programIR, "cpp", "")
@@ -47,20 +51,22 @@ def Compile(sourceCode):
 if __name__ == "__main__":
     print("Starting")
     
-    f = open("code.cpl","r")
+    f = open("InputCode/code.cpl","r")
     content = f.read()
     f.close()
     start = time.time()
-    program = Compile(content)
+    program = Compile(content,
+        outputPreProcessedCode=True                  
+    )
     print("Compiled in -> ", time.time() - start)
     print("\n\n---Prog---\n", program)
-    #f = open("Compiled/out.cpp", "w")
-    #f.write(program)
-    #f.close()
-    if True == True:
+    f = open("Compiled/out.cpp", "w")
+    f.write(program)
+    f.close()
+    if True:
         execString = [
             "g++ Compiled/out.cpp",
-            "a.exe"
+            "./a.out"
         ]
         os.system(" && ".join(execString))
     #os.system("nasm -f bin Compiled/out.asm -o Compiled\out.bin")

@@ -157,20 +157,24 @@ class Converter():
         return cleanedList
     def PreCode(self):
         defines = """
+#define SAFE
 #include <iostream>
 #include <vector>
-#include \"graphics.cpp\"
-#include \"cplCppList.hpp\"
+#include \"../CppFiles/CplCppList.hpp\"
 
 #define i32 int
 #define i16 short
 #define i8 signed char
+#define f32 float
 #define UNKNOWN int
 
 #define VARTYPE sizeof(int)
 
 void printc(i32 character){
     std::cout << (char)character;
+}
+void printf(f32 value){
+    std::cout << value;
 }
 
 """

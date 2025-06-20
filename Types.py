@@ -1,3 +1,8 @@
+#bigger beat smaller of same style
+#float beat int
+#signed beat unsigned
+
+
 class Type():
     def __init__(self,  name, style, sizeInBytes):
         self.name = name
@@ -30,3 +35,20 @@ def GetTypeByName(name):
         if t.name == name:
             return t
     raise Exception("Failed to find type with name -> " + name)
+def GetTypeByStyleAndSize(style, sizeInBytes):
+    if style == "float":
+        if sizeInBytes == 4:
+            return f32Type
+        #elif sizeInBytes == 4:
+        #    return f64Type
+        else:
+            raise Exception("Invlaid size for float")
+    elif style == "int":
+        if sizeInBytes == 1:
+            return i8Type
+        elif sizeInBytes == 4:
+            return i32Type
+        else:
+            raise Exception("Invalid size for int")
+    else:
+        raise Exception("Invalid style")

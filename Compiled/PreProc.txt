@@ -1,37 +1,10 @@
-
 fn void cplMain(){
-	fn void println(){
-		printc(10);
-		printc(13);
-	}
-	fn void printn(i32 number){	
-		i32 bufferSize = 11;
-		i32[bufferSize] buffer = 0;
-		i32 pointer = 10;
-		i32 runOnceFlag = 1;
-		while number != 0 or runOnceFlag == 1{
-			i32 digit = number % 10;
-			number = number / 10;
-			printc(digit + 48);
-			println();
-			buffer[pointer] = digit + 48;		
-			pointer = pointer - 1;
-			runOnceFlag = 0;
-		}
-		pointer = pointer + 1;
-		while pointer < bufferSize{
-			printc(buffer[pointer]);
-			pointer = pointer + 1;
-		}
-	}
-	printn(356);
-	println();
-	i32[8] buffer = 49;
-	i32 counter = 0;
-	while counter < 8{
-		printc(buffer[counter]);
-		counter = counter + 1;
-	}
+	f32 a = 0.0;
+	f32 b = 1.0;
+	f32 c = b + a;
+	printf(c);
+
+	
 }
 
 

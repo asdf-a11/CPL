@@ -1,5 +1,10 @@
-
 fn void cplMain(){
+	f32 a = 0.0;
+	f32 b = 1.0;
+	f32 c = b + a;
+	printf(c);
+
+	##
 	fn void println(){
 		printc(10);
 		printc(13);
@@ -32,6 +37,7 @@ fn void cplMain(){
 		printc(buffer[counter]);
 		counter = counter + 1;
 	}
+	##
 }
 
 

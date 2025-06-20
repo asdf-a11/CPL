@@ -1,4 +1,6 @@
 #pragma once
+#include <iostream>
+
 template<class T>
 struct CPL_LIST{
     T* dataList = nullptr;
@@ -9,6 +11,11 @@ struct CPL_LIST{
     }
 
     T& operator[](int position){
+        #ifdef SAFE
+            if(position >= size || position < 0){
+                std::cerr << "Invalid list index pos=" << position << "!!!!\n";
+            }
+        #endif
         return dataList[position];
     }
 

@@ -19,7 +19,7 @@ class Variable():
         self.name = name
         self.dataType = dataType
         self.listSize = listSize
-        self.hardSetType = False if self.dataType == "UNKNOWN" else True
+        self.hardSetType = False if self.dataType.name == "UNKNOWN" else True
 class Scope():
     def __init__(self):
         self.varList = []
@@ -50,13 +50,13 @@ def GenerateScopes(instList):
         if i.name == "CREATE":
             pass
 def LogCreatedVariable(argList, currentScope):
-    dataTypeName = argList[0]
+    dataType = Types.GetTypeByName(argList[0])
     varName = argList[1]
     if len(argList) == 2:
         listSize = 1
     else:
         listSize = int(argList[2])    
-    currentScope.AddVariable(dataTypeName, varName, listSize)
+    currentScope.AddVariable(dataType, varName, listSize)
 def GetVaraibleFromScopeList(name, scopeList):
     for i in reversed(scopeList):
         for v in i.varList:
@@ -70,28 +70,47 @@ def GetArgumentType(argument, scopeList):
         return Types.i32Type
     var = GetVaraibleFromScopeList(argument, scopeList)
     return var.dataType
-def SetUnknownType(argList, scopeList):
+def UpdateVarTypeFromArithmetic(argList, scopeList):
     writeIntoVar = GetVaraibleFromScopeList(argList[0], scopeList)
     type1 = GetArgumentType(argList[1], scopeList)
     if argList[2] == "VAR_TYPE":
         type2 = type1
     else:
         type2 = GetArgumentType(argList[2], scopeList)
-    if writeIntoVar.hardSetType == False:#dataType == Types.unknownType.name
-        if type1 == Types.f32Type.name or type2 == Types.f32Type.name:
-            writeIntoVar.dataType = Types.f32Type.name
+    if writeIntoVar.hardSetType == False:
+        isStyleFloat = writeIntoVar.dataType.style == "float"
+        isStyleFloat = isStyleFloat or type1.style == "float"
+        isStyleFloat = isStyleFloat or type2.style == "float"
+
+        isUnsigned = writeIntoVar.dataType.style == "unsigned"
+        isUnsigned = isUnsigned and type1.style == "unsigned"
+        isUnsigned = isUnsigned and type2.style == "unsigned"
+
+        if isStyleFloat: style = "float"
         else:
-            writeIntoVar.dataType = Types.i32Type.name
+            if isUnsigned: style = "unsigned"
+            else: style = "int"
+
+        writeIntoVatSize = 0 if writeIntoVar.dataType.sizeInBytes == None else writeIntoVar.dataType.sizeInBytes
+
+        maxSize = max(type1.sizeInBytes, type2.sizeInBytes)
+        maxSize = max(maxSize, writeIntoVatSize)
+
+        writeIntoVar.dataType = Types.GetTypeByStyleAndSize(style, maxSize)
+
         SetVariable(writeIntoVar.name, writeIntoVar.dataType, scopeList)   
-def SetUnknownTypeFromMov(argList, scopeList):
+def UpdateVarTypeFromMov(argList, scopeList):
     writeIntoVar = GetVaraibleFromScopeList(argList[0], scopeList)
     typ = GetArgumentType(argList[1], scopeList)
+    #If it is allready hardset then it shouldnt change else it needs to be evaluated
     if writeIntoVar.hardSetType == False:
-        if typ == Types.f32Type.name:
-            writeIntoVar.dataType = Types.f32Type.name
-        else:
-            writeIntoVar.dataType = Types.i32Type.name
-        SetVariable(writeIntoVar.name, writeIntoVar.dataType, scopeList)   
+        #Following the rules of update to float, to bigger or if is currently UNKNOWN
+        condition = writeIntoVar.dataType.name == "UNKNOWN"
+        condition = condition or (writeIntoVar.dataType.style == "int" and typ.style == "float")
+        condition = condition or (writeIntoVar.dataType.style == typ.style and typ.sizeInBytes > writeIntoVar.dataType.sizeInBytes)
+        if condition:
+            writeIntoVar.dataType = typ
+            SetVariable(writeIntoVar.name, writeIntoVar.dataType, scopeList)   
 def BackTrackAndSetTypes(idx, instList, scopeList):
     openScopeCounter = 0
     while 1:
@@ -137,9 +156,9 @@ def RemoveUnknownVarType(instList):
         elif inst.name == "CREATE" or inst.name == "CREATE_ARGUMENT":
             LogCreatedVariable(inst.argList, scopeList[-1])
         elif inst.name in arithmeticInstructionNameList:
-            SetUnknownType(inst.argList, scopeList)
+            UpdateVarTypeFromArithmetic(inst.argList, scopeList)
         elif inst.name == "MOV":
-            SetUnknownTypeFromMov(inst.argList, scopeList)
+            UpdateVarTypeFromMov(inst.argList, scopeList)
 def RemoveVarType(instList):
     for idx,inst in enumerate(instList):
         for adx,a in enumerate(inst.argList):

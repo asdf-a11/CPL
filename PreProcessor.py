@@ -121,48 +121,18 @@ def PerformPass(splitList):
                 raise Exception("Invalid pre proc instruction")
         else:
             counter += 1
-        anythingHappend = anythingHappend or MacroExpantion(splitList, counter)
-        
-    #check for trailing open preprocessor directive
+        anythingHappend = anythingHappend or MacroExpantion(splitList, counter)        
+    #Check for trailing open preprocessor directive
     if splitList[-1] == "#":
         raise Exception("Code cannot end with unclosed #")
     return anythingHappend
 
 
 def PreProcess(code):
-    #handle one line comments
+    #Handle one line comments
     code = RemoveOneLineComments(code)
-    #loop through replacing macros and creating new macros
+    #Loop through replacing macros and creating new macros
     splitList = Lexer.GenerateSplitList(code)
-    PerformPass(splitList)
-    
+    PerformPass(splitList)    
 
     return SplitListToString(splitList)
-
-
-
-'''
-    tokenCounter = 0
-    anythingHappened = False
-    while tokenCounter < len(splitList):
-        if splitList[tokenCounter] == "#":            
-            startCdx = tokenCounter
-            tokenCounter += 1
-            hap, newCdx = IsMacro(splitList, tokenCounter)
-            anythingHappened = anythingHappened or hap
-            pre = splitList[:startCdx]
-            after = splitList[tokenCounter:]
-            splitList = pre + after
-        v = CheckIfMacro(splitList, tokenCounter)
-        if v != False:
-            pre = splitList[:tokenCounter]
-            after = splitList[tokenCounter + 1:]
-            splitList = pre + after
-            for i in reversed(v.content):
-                splitList.insert(tokenCounter, i)
-            anythingHappened = True
-        tokenCounter += 1
-    if anythingHappened:
-        splitList = PreProcess()
-
-'''
