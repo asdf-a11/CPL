@@ -1,5 +1,19 @@
 
-printc(48);
+struct Test{
+	i32 a = 10;
+	i32 b = 20;
+
+	fn void printValues(i32 g){
+		printn(a);
+	}
+}
+
+Test g;
+g.a = 10;
+g.b = 15;
+printn(g.a);
+printn(g.b);
+
 
 
 

@@ -79,7 +79,7 @@ class Function():
             raise Exception("Expected open bracked")
         idx += 1
         if tokenList[idx].tokenType == ")":
-            return [],[], idx + 1
+            return idx + 1
         while 1:
             if tokenList[idx].tokenType != "TYPE":
                 if len(typeList) == 0:

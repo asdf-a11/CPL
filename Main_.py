@@ -24,9 +24,6 @@ def Compile(sourceCode, outputPreProcessedCode):
     tokenList = Lexer.RemoveWhiteSpace(tokenList)
     Lexer.PrintTokenList(tokenList)
     print("Lexing took -> ", time.time() - startLexingTime)
-    #functionList = FirstLayerParser.FirstLayerParse(tokenList)
-    #for f in functionList:
-    #    f.GenerateIR()
     wholeProgramIR = []
     wholeProgramFunction = Function.Function(
         name="cplMain"
@@ -79,5 +76,33 @@ if __name__ == "__main__":
     ##command = open("Compiled/run.cmd","r").read()
     ##os.system(command)
     print("Done")
+
+'''
+<!DOCTYPE html>
+<html>
+<body>
+
+<h2>A polygon with four sides</h2>
+
+<svg height="250" width="500">
+  <polygon points="130,125 0,125 130,250 350,200" style="fill:rgb(140,35,40);" />  
+  <polygon points="0,125 130,125 130,125 130, 0" style="fill:rgb(230,25,25);" />
+  <polygon points="130,125 130, 0 350,50" style="fill:rgb(230,25,25);" />
+  <circle cx="130" cy="125" r="70" stroke="white" stroke-width="20" fill-opacity="0.0" />
+  <polygon points="130,125 130,125 350,50 350,200" style="fill:rgb(185,25,28);" />
+  <!--The P-->
+  <rect width="10" height="75" x="230" y="87.5" style="fill:rgb(255,255,255);" />
+  <rect width="40" height="10" x="230" y="87.5" style="fill:rgb(255,255,255);" />
+  <rect width="10" height="40" x="260" y="87.5" style="fill:rgb(255,255,255);" />
+  <rect width="40" height="10" x="230" y="117.5" style="fill:rgb(255,255,255);" />
+  <!--The L-->
+	<rect width="10" height="75" x="290" y="87.5" style="fill:rgb(255,255,255);" />
+    <rect width="45" height="10" x="290" y="152.5" style="fill:rgb(255,255,255);" />
+</svg>
+
+</body>
+</html>
+
+'''
 
     

@@ -2,6 +2,7 @@ from Util import *
 import ParseExpression
 import IR
 import Function
+import Struct
 
 tempVarNameNumber = 0
 def CreateNewTempVar(instList):
@@ -36,11 +37,9 @@ def IsEqu(idx, instList, tokenList):
             newInstructions, newIdx, _ = EvalSquareBrackets(tokenList, idx + 2)
             equPos = newIdx + 1
             instList += newInstructions
-            #expName = CreateNewTempVar(1, instList)
-            #newIrList, newIdx = ParseExpression.ExpToIasm(tokenList, idx + 2, expName, escChar="]", oppEscChar="[")
-            #instList += newIrList
-            #instList.append(IR.Instruction("*", [expName, expName, "VAR_TYPE"]))
-            #equPos = newIdx + 1
+        if il(tokenList,idx+1,errMsg).tokenType == ".":
+            pass
+            #What about a pass before with replaces all . and -> with ptr notation
         if il(tokenList,equPos,errMsg).tokenType == "=":
             expName2 = CreateNewTempVar(instList)
             newIrList, newIdx = ParseExpression.ExpToIasm(tokenList, equPos + 1, expName2)#, indexedAt=expName
@@ -57,7 +56,8 @@ def IsEqu(idx, instList, tokenList):
     return False, 0
 def IsTypeDef(idx, instList, tokenList):
     errMsg = "Failed to read in type because end of token list"
-    if il(tokenList,idx,errMsg).tokenType == "TYPE":
+    tt = il(tokenList,idx,errMsg).tokenType 
+    if tt == "TYPE" or tt == "NAME":
         namePos = idx + 1
         isList = False
         if il(tokenList, idx+1, errMsg).tokenType == "[":
@@ -232,16 +232,30 @@ def IsCreateFunction(idx, instList, tokenList):
 
 def IsCreateStruct(idx, instList, tokenList):
     errMsg = "Ran out of tokens to check if it is a new function being created"
-    if il(tokenList,idx,errMsg).tokenType == "struct":
-        idx += 1
-        if il(tokenList,idx,errMsg).tokenType != "NAME":
-            raise Exception("Expecting a name after struct keyword")
-        structName = tokenList[idx]
-        idx += 1
-        structContents, idx = FirstLayerParser.ReadInScope(tokenList, idx)
+    if il(tokenList,idx,errMsg).tokenType == "STRUCT":
+        newIdx, struct = Struct.CreateStruct(tokenList, idx)
+
+        lst = []
+        for i in range(len(struct.varNameList)):
+            lst.append(struct.varTypeList[i])
+            lst.append(struct.varNameList[i])
+
+        instList.append(IR.Instruction("CREATE_STRUCT", [
+            struct.name,
+            "~".join(lst)
+        ]))
+
+        instList += struct.GetFunctionDefinitionIrCode()
+
+        #idx += 1
+
+        #structName = tokenList[idx]
+        #idx += 1
+        #structContents, idx = FirstLayerParser.ReadInScope(tokenList, idx)
 
         #instList.append(IR.Instruction("CREATE_STRUCT", [listName, expName, expName2])) 
-        pass
+        return True, newIdx
+    return False, 0
 
         
 
@@ -259,7 +273,8 @@ functionList = [
     IsElse,
     IsRepeat,
     IsVoidFunctionCall,
-    IsCreateFunction
+    IsCreateFunction,
+    IsCreateStruct
 ]
 
 def GenerateIR(tokenList):
