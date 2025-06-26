@@ -65,7 +65,7 @@ if __name__ == "__main__":
     f.close()
     if True:
         execString = [
-            "g++ Compiled/out.cpp",
+            "g++ Compiled/out.cpp -lX11",
             "./a.out"
         ]
         os.system(" && ".join(execString))

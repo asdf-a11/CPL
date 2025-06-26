@@ -11,19 +11,23 @@ fn void printVec2(vec2 a){
 	printc(13);
 }
 
-i32 counter1 = 0;
-while counter1 < 2{
-	i32 counter2 = 0;
-	while counter2 < 2{
-		vec2 g;
-		g.x = counter1;
-		g.y = counter2;
-		printVec2(g);
-		counter2 = counter2 + 1;
+graphicsinit();
+
+while 1{
+	i32 counter1 = 0;
+	while counter1 < 10{
+		i32 counter2 = 0;
+		while counter2 < 10{
+			drawpixel(counter1, counter2, 255, 0, 0);
+			counter2 = counter2 + 1;
+		}
+		counter1 = counter1 + 1;
 	}
-	counter1 = counter1 + 1;
+	graphicssleep(10);
 }
 
+
+while 1{}
 
 
 ##

@@ -190,12 +190,13 @@ class Converter():
         return cleanedList
     def PreCode(self):
         defines = """
-#define SAFE
+#define SAFE true
 #include <iostream>
 #include <vector>
 #include <cstddef>
 #include \"../CppFiles/CplCppList.hpp\"
 #include \"../CppFiles/CplPtr.hpp\"
+#include \"../CppFiles/CPLGraphics.hpp\"
 
 #define i32 int
 #define i16 short
