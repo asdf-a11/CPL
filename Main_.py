@@ -8,7 +8,7 @@ import PreProcessor
 import Settings
 import Function
 
-def Compile(sourceCode, outputPreProcessedCode):    
+def Compile(sourceCode, outputPreProcessedCode=False):    
     startPreProc = time.time()
     sourceCode = PreProcessor.PreProcess(sourceCode)
     print("PreProc took -> ", time.time() - startPreProc)

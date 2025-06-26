@@ -44,6 +44,7 @@ operatorList = [
     Operator("!",1,6), #logical not
     Operator("$",1,6),
     Operator("&",1,6),
+    Operator(".",1,6),
     Operator("VOID_OP",2,1),
     
 

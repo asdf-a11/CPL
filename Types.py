@@ -1,3 +1,4 @@
+import copy
 #if boolean operator then bool
 #bigger beat smaller of same style
 #float beat int
@@ -9,6 +10,7 @@ class Type():
         self.name = name
         self.style = style
         self.sizeInBytes = sizeInBytes
+        self.isPtr = False
     def __str__(self):
         return self.name
 
@@ -26,29 +28,32 @@ typeList = [
     f32Type
 ]
 
+#typeList = baseTypeList.copy()
+
 typeNameList = []
 
 def Init():
     for t in typeList:
         typeNameList.append(t.name)
-def GetTypeByName(name):
+def GetTypeByName(name) -> Type | bool:
     for t in typeList:
         if t.name == name:
             return t
-    raise Exception("Failed to find type with name -> " + name)
+    return False
+    #raise Exception("Failed to find type with name -> " + name)
 def GetTypeByStyleAndSize(style, sizeInBytes):
     if style == "float":
         if sizeInBytes == 4:
-            return f32Type
+            return copy.deepcopy(f32Type)
         #elif sizeInBytes == 4:
         #    return f64Type
         else:
             raise Exception("Invlaid size for float")
     elif style == "int":
         if sizeInBytes == 1:
-            return i8Type
+            return copy.deepcopy(i8Type)
         elif sizeInBytes == 4:
-            return i32Type
+            return copy.deepcopy(i32Type)
         else:
             raise Exception("Invalid size for int")
     else:

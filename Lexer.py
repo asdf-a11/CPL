@@ -14,13 +14,14 @@ keyWordList = [
 ]
 
 class Token():
-    def __init__(self):
-        self.tokenType = "NONE"
-        self.tokenSubset = "NONE"
-        self.tokenContent = "NONE"
+    def __init__(self, typ="NONE", subset="NONE"):
+        self.tokenType = subset
+        self.tokenSubset = typ
+        #self.tokenContent = "NONE"
+        self.tokenContent = self.tokenSubset
         self.newLine = 0
         self.whiteSpace = 0
-    def Print(self,ret=False,nl=True, whiteSpace=True):
+    def Print(self,ret=False,nl=True, whiteSpace=True) -> None:
         outString = ""
         s = self.tokenSubset
         if self.tokenType == "WHITE_SPACE":

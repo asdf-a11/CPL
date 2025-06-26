@@ -32,6 +32,8 @@ def CreateStruct(tokenList, idx):
     #Read in the data in the struct as if it were a function
     func = Function.Function()
     endOfStructIdx = func.ReadInScope(tokenList, 2)
+    #Include } at end of struct
+    endOfStructIdx += 1
 
     #Convert it to IR code
 

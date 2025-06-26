@@ -3,12 +3,13 @@ import ParseExpression
 import IR
 import Function
 import Struct
+import Lexer
 
 tempVarNameNumber = 0
 def CreateNewTempVar(instList):
     global tempVarNameNumber
     name = "EXP_TEMP_VAR_" + str(tempVarNameNumber)
-    instList.append(IR.Instruction("CREATE",[
+    instList.append(IR.Instruction("CREATE_TEMP_VAR",[
         "UNKNOWN",
         name
     ]))
@@ -23,6 +24,41 @@ def EvalSquareBrackets(tokenList, idx):
 
 #!!!!!!!!!!!!!!!!!!!!!!!!!
 def IsEqu(idx, instList, tokenList):
+
+    #Is EQU if has = and no other keywords
+    isEqu = True
+    existsEquals = False
+    i = idx
+    while True:
+        if tokenList[i].tokenType == "=":
+            existsEquals = True
+        if tokenList[i].tokenType in [j.upper() for j in Lexer.keyWordList]:
+            isEqu = False
+            break
+        if tokenList[i].tokenType == ";":
+            break
+        i += 1
+    isEqu = isEqu and existsEquals
+
+    if isEqu:
+        #Parse left hand side
+        leftEvalTempVar = CreateNewTempVar(instList)
+        leftEvalMemAddrTempVar = CreateNewTempVar(instList)
+        newIrList, newIdx = ParseExpression.ExpToIasm(tokenList, idx, leftEvalTempVar, escChar="=")
+        instList += newIrList
+        instList.append(IR.Instruction("&", [leftEvalMemAddrTempVar, leftEvalTempVar]))
+        #Parse right hand side
+        newIdx += 1#jump over = sign
+        rightEvalTempVar = CreateNewTempVar(instList)
+        newIrList, newIdx = ParseExpression.ExpToIasm(tokenList, newIdx, rightEvalTempVar, escChar=";")
+        instList += newIrList
+        instList.append(IR.Instruction("DREF_MOV", [leftEvalMemAddrTempVar, rightEvalTempVar]))
+        newIdx += 1#jump over ;
+        return True, newIdx
+    else:
+        return False, 0 
+
+    '''
     errMsg = "Failed to read in Equ"
     nameToken = il(tokenList,idx,errMsg)
     ptr = False
@@ -54,6 +90,7 @@ def IsEqu(idx, instList, tokenList):
             instList.append(IR.Instruction(instName,argList))
             return True, newIdx + 1
     return False, 0
+    '''
 def IsTypeDef(idx, instList, tokenList):
     errMsg = "Failed to read in type because end of token list"
     tt = il(tokenList,idx,errMsg).tokenType 
@@ -279,6 +316,8 @@ functionList = [
 
 def GenerateIR(tokenList):
     global closeScopeAdditionCode
+    #RemoveDotNotation(tokenList)
+    #Lexer.PrintTokenList(tokenList)
     closeScopeAdditionCode = []
     instList = []
     idx = 0
@@ -298,4 +337,52 @@ def GenerateIR(tokenList):
             raise Exception("Failed to find token combo idx -> " + str(idx))
     return instList
         
-
+def RemoveDotNotation(tokenList) -> None:
+    for idx,token in enumerate(tokenList):
+        if token.tokenType == ".":
+            if idx-1 < 0 or idx+1>=len(tokenList):
+                raise Exception("Invalid position for .")
+            if tokenList[idx-1].tokenType == "NAME" and tokenList[idx+1].tokenType == "NAME":
+                newToken = Lexer.Token()
+                newToken.tokenType = "NAME"
+                newToken.tokenSubset = tokenList[idx-1].tokenSubset + "." + tokenList[idx+1].tokenSubset
+                newToken.newLine = tokenList[idx].newLine
+                newToken.whiteSpace = tokenList[idx].whiteSpace
+                tokenList[idx] = newToken
+                tokenList.pop(idx+1)
+                tokenList.pop(idx-1)
+    '''
+    for idx,token in enumerate(tokenList):
+        if token.tokenType == ".":
+            if idx-1 < 0 or idx+1>=len(tokenList):
+                raise Exception("Invalid position for .")
+            if tokenList[idx-1].tokenType == "NAME" and tokenList[idx+1].tokenType == "NAME":
+                typeInstance = tokenList[idx-1].tokenSubset
+                attribName = tokenList[idx+1].tokenSubset
+                #Remove the two tokens
+                tokenList.pop(idx+1)
+                tokenList.pop(idx)
+                tokenList.pop(idx-1)
+                #Replace with ptr notation
+                #g.a --> UNKNOWN ptr = g+attribpos(decltype(g),a);
+                # $ptr
+                nl,ws = tokenList[idx].newLine, tokenList[idx].whiteSpace
+                toInsert = [
+                    Lexer.Token("$"),
+                    Lexer.Token("("),
+                    Lexer.Token("NAME",typeInstance),
+                    Lexer.Token("OPERATOR", "+"),
+                    Lexer.Token("NAME","attribpos"),
+                    Lexer.Token("("),
+                    Lexer.Token("NAME", "decltype"),
+                    Lexer.Token("("),
+                    Lexer.Token("NAME", typeInstance),
+                    Lexer.Token(")"),
+                    Lexer.Token("NAME", attribName),
+                    Lexer.Token(")"),
+                    Lexer.Token(")")
+                ]
+                for i in reversed(toInsert):
+                    tokenList.insert(idx-1, i)
+                pass
+    '''

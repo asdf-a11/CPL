@@ -23,7 +23,10 @@ class Converter():
         return code
     def Create(self, instList, instIdx, argList):
         code = ""
-        code += self.tabs + argList[0] + " " + argList[1] + ";\n"
+        t = argList[0]
+        if "$" in t:
+            t = f"CPLPtr<{t.replace("$","")}>"
+        code += self.tabs + t + " " + argList[1] + ";\n"
         return code
     def CreateList(self, instList, instIdx, argList):
         t = argList[0]
@@ -102,7 +105,7 @@ class Converter():
         code = self.tabs + "else\n"
         return code
     def GetMemoryAddress(self, instList, instIdx, argList):
-        return self.tabs + "&" + argList[0] + ";\n"
+        return f"{self.tabs}{argList[0]} = &({argList[1]});\n"
     def Call(self, instList, instIdx, argList):
         code = self.tabs + argList[1] + "("
         for i in range(2, len(argList)):
@@ -111,16 +114,38 @@ class Converter():
                 code += ", "
         code += ");\n"
         return code
+    def CreateStruct(self, instList, instIdx, argList):
+        code = ""
+        code += self.tabs + "struct " + argList[0] + "{\n"
+        nameList = argList[1].split("~")[1::2]
+        typeList = argList[1].split("~")[0::2]
+        for n, t in zip(nameList, typeList):
+            code += self.tabs + "\t" + t + " " + n + ";\n"
+        code += self.tabs + "};\n"
+        return code
+    def DotOperator(self, instList, instIdx, argList):
+        code = ""
+        code += self.tabs + f"{argList[0]} = {argList[1]}.{argList[2]};\n"
+        return code
+    def DrefMov(self, instList, instIdx, argList):
+        code = self.tabs + f"*({argList[0]}) = {argList[1]};\n"
+        return code
+    def Nop(self, instList, instIdx, argList):
+        return ""
     ###########
     #stuff
     ###########
     def GetFunctionForInstruction(self, instName):
-        lst = [            
+                    #["LDR", self.Ldr], should be $
+        lst = [  
+            ["NOP", self.Nop] ,         
             ["MOV", self.Mov],
-            ["LDR", self.Ldr],
+            ["DREF_MOV", self.DrefMov],
             ["CREATE", self.Create],
+            ["CREATE_TEMP_VAR", self.Create],
             ["CREATELIST", self.CreateList],
             ["SETLIST", self.SetList],
+            ["CREATE_STRUCT", self.CreateStruct],
             ["CREATE_ARGUMENT", self.CreateArgument],
             ["REPEAT", self.Repeat],
             ["OPENSCOPE", self.OpenScope],
@@ -151,7 +176,8 @@ class Converter():
             ["|", self.DoubleOperandOperation],
             [">>", self.DoubleOperandOperation],
             ["<<", self.DoubleOperandOperation],
-            ["&", self.GetMemoryAddress]
+            ["&", self.GetMemoryAddress],
+            [".", self.DotOperator]
         ]
         for i in lst:
             if i[0] == instName:
@@ -167,13 +193,16 @@ class Converter():
 #define SAFE
 #include <iostream>
 #include <vector>
+#include <cstddef>
 #include \"../CppFiles/CplCppList.hpp\"
+#include \"../CppFiles/CplPtr.hpp\"
 
 #define i32 int
 #define i16 short
 #define i8 signed char
 #define f32 float
 #define UNKNOWN int
+#define byte unsigned char
 
 #define VARTYPE sizeof(int)
 
@@ -205,10 +234,20 @@ int main(){
             code += i + ";\n"
         code += "\n"
         return code
+    def CleanInstructionList(self, instList):
+        for inst in instList:
+            for a in range(len(inst.argList)):
+                if "::" in inst.argList[a]:
+                    l = inst.argList[a].split("::")
+                    inst.argList[a] = f"CPLPtr<char>((void*)(offsetof({l[0]},{l[1]})))"
+                    if inst.name == "CREATE":
+                        inst.name = "NOP"
+                        break
     def Convert(self, instList, settings):
         self.scopeList = [Scope(0)]
         self.tabs = ""
         code = ""
+        self.CleanInstructionList(instList)
         for instIdx,inst in enumerate(instList):            
             func = self.GetFunctionForInstruction(inst.name)
             if func == None: continue
