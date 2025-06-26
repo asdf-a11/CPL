@@ -389,6 +389,10 @@ def EvaluateMemoryAddressOfTempVars(instList):
                         IR.Instruction("&", [tempVar, inst.argList[1]]),
                         IR.Instruction("+", [RVS, tempVar, f"VAR_TYPE::{inst.argList[2]}"])
                     ]
+                elif inst.name == "MOV":
+                    writeIntoVar.addressInstList += [
+                        IR.Instruction("&", [RVS, inst.argList[1]]),
+                    ]
         instructionIndex += 1
 
 def PerformOperations(program):

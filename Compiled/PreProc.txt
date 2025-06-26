@@ -1,14 +1,28 @@
-
-struct Test{
-	i32 a = 10;
-	i32 b = 20;
+struct vec2{
+	i32 x;
+	i32 y;
 }
 
-Test g;
-g.a = 10;
-g.b = 15;
-printn(g.a);
-printn(g.b);
+fn void printVec2(vec2 a){
+	printn(a.x);
+	printc(95);
+	printn(a.y);
+	printc(10);
+	printc(13);
+}
+
+i32 counter1 = 0;
+while counter1 < 2{
+	i32 counter2 = 0;
+	while counter2 < 2{
+		vec2 g;
+		g.x = counter1;
+		g.y = counter2;
+		printVec2(g);
+		counter2 = counter2 + 1;
+	}
+	counter1 = counter1 + 1;
+}
 
 
 

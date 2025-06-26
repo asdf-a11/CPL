@@ -84,7 +84,7 @@ class Converter():
             code = self.tabs + argList[1] + " " + argList[0] + "("
             functionDefString = code
         else:
-            code = f"{self.tabs}{argList[0]} = []("
+            code = f"{self.tabs}auto {argList[0]} = []("
             functionDefString = f"{argList[1]} (*{argList[0]})("
         functionArgumentList = argList[2].split("~")
         paramString = ""
@@ -257,7 +257,7 @@ int main(){
             cleanedArgList = self.CleanInstructionArgList(inst.argList)
             newCode += func(instList, instIdx, cleanedArgList)            
             code += newCode
-        code = self.PreCode() + self.AddFunctionDeclorations() + code + self.AfterCode()
+        code = self.PreCode() + code + self.AfterCode()#self.AddFunctionDeclorations()
         return code
 
 #define or ||

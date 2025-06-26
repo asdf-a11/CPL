@@ -81,7 +81,7 @@ class Function():
         if tokenList[idx].tokenType == ")":
             return idx + 1
         while 1:
-            if tokenList[idx].tokenType != "TYPE":
+            if tokenList[idx].tokenType != "TYPE" and tokenList[idx].tokenType != "NAME":
                 if len(typeList) == 0:
                     raise Exception("Expecteed a type here")
                 typeList.append(typeList[-1])
