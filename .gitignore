@@ -1,5 +1,6 @@
 __pycache__/
 a.out
+a.exe
 Compiled/
 .vscode/
 Compiled/irCode_unOptimised.txt

@@ -65,8 +65,9 @@ if __name__ == "__main__":
     f.close()
     if True:
         execString = [
-            "g++ Compiled/out.cpp -lX11",
-            "./a.out"
+            "g++ Compiled/out.cpp -luser32 -lgdi32",#lX11
+            #"./a.out"
+            "start a.exe"
         ]
         os.system(" && ".join(execString))
     #os.system("nasm -f bin Compiled/out.asm -o Compiled\out.bin")

@@ -4,16 +4,18 @@
 #include <thread>
 #define uint unsigned int
 #define ulong unsigned long
-#define byte unsigned char
+
 #define looph(v,h) for(int v = 0; v < (h); v++)
 //#define SAFE true
 #ifdef _WIN32
+    //#define byte unsigned char
     #undef UNICODE
     #undef _UNICODE
     #include <windows.h>
     #undef min
     #undef max
 #else
+#define byte unsigned char
 //Linux stuff
 namespace X11{
     #include <X11/Xlib.h> // Primary Xlib header for X Window System client-side programming
@@ -52,7 +54,8 @@ namespace Graphics{
                 RegisterClass(&wc);
 
                 hwnd = CreateWindow("MyWindowClass", "Pixel Window", WS_OVERLAPPEDWINDOW,
-                                        CW_USEDEFAULT, CW_USEDEFAULT, SCREEN_WIDTH, SCREEN_HEIGHT,
+                                        CW_USEDEFAULT, CW_USEDEFAULT, 
+                                        width, height,
                                         NULL, NULL, wc.hInstance, NULL);
                 ShowWindow(hwnd, SW_SHOW);
 
@@ -67,6 +70,7 @@ namespace Graphics{
             DispatchMessage(&msg);
 
         }
+        /*
         void StartLoop(fnptr(void, loopFunction, Window*)){
             MSG msg = {0};
             while (true) { 
@@ -90,11 +94,9 @@ namespace Graphics{
                 }
             }
         }
-        void DrawPixel(int x, int y, Vec3 colour){
-            looph(i,3){
-                colour[i] = std::min(1.f,std::max(0.f,colour[i]));
-            }
-            SetPixel(hdc, x, y, RGB((int)(colour.x*255.f), (int)(colour.y*255.f), (int)(colour.z*255.f)));
+        */
+        void DrawPixel(int x, int y, byte r, byte g, byte b){
+            SetPixel(hdc, x, y, RGB((int)(r), (int)(g), (int)(b)));
         }
         bool IsKeyPress(uint keyId){
             std::cerr << "Appoligies but getting key presses on windows is not implimented yet\n";

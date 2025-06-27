@@ -25,7 +25,7 @@ class Converter():
         code = ""
         t = argList[0]
         if "$" in t:
-            t = f"CPLPtr<{t.replace("$","")}>"
+            t = f"CPLPtr<{t.replace('$','')}>"
         code += self.tabs + t + " " + argList[1] + ";\n"
         return code
     def CreateList(self, instList, instIdx, argList):
