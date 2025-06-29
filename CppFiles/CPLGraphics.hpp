@@ -336,15 +336,20 @@ namespace Graphics{
 }
 
 Graphics::Window window(600,600,"CPLGRAPHICS");
-void graphicsinit(){
+int graphicsinit(int xsize, int ysize){
+    window.height = ysize;
+    window.width = xsize;
     window.Init();
+    return 0;
 }
 void graphicspump(){
 
 }
-void drawpixel(int x, int y, int r, int g, int b){
+int drawpixel(int x, int y, int r, int g, int b){
     window.DrawPixel(x,y,(byte)r,(byte)g,(byte)b);
+    return 0;
 }
-void graphicssleep(int ticks){
+int graphicssleep(int ticks){
     std::this_thread::sleep_for(std::chrono::milliseconds(ticks));
+    return 0;
 }

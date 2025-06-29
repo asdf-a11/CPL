@@ -26,7 +26,7 @@ def EvalSquareBrackets(tokenList, idx):
 def IsEqu(idx, instList, tokenList):
 
     #Is EQU if has = and no other keywords
-    isEqu = True
+    isEqu = tokenList[idx].tokenType != "TYPE"
     existsEquals = False
     i = idx
     while True:
@@ -97,6 +97,7 @@ def IsTypeDef(idx, instList, tokenList):
     if tt == "TYPE" or tt == "NAME":
         namePos = idx + 1
         isList = False
+        isPtr = False
         if il(tokenList, idx+1, errMsg).tokenType == "[":
             #size = int(tokenList[idx + 2].tokenSubset)
             #namePos = idx + 1+1+1+1
@@ -104,16 +105,19 @@ def IsTypeDef(idx, instList, tokenList):
             newInstructions, newIdx, sizeVarName = EvalSquareBrackets(tokenList, idx + 2)
             namePos = newIdx + 1
             instList += newInstructions
+        if il(tokenList, idx+1, errMsg).tokenSubset == "$":
+            isPtr = True
+            namePos += 1
         if il(tokenList,namePos,errMsg).tokenType == "NAME":
             if isList:
                 instList.append(IR.Instruction("CREATELIST",[
-                    tokenList[idx].tokenSubset,
+                    tokenList[idx].tokenSubset + "$" * isPtr,
                     tokenList[namePos].tokenSubset,
                     sizeVarName
                 ]))
             else:
                 instList.append(IR.Instruction("CREATE",[
-                    tokenList[idx].tokenSubset,
+                    tokenList[idx].tokenSubset + "$" * isPtr,
                     tokenList[namePos].tokenSubset,
                 ]))
             hap,newIdx = IsEqu(namePos, instList, tokenList)

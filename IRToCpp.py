@@ -24,8 +24,12 @@ class Converter():
     def Create(self, instList, instIdx, argList):
         code = ""
         t = argList[0]
-        if "$" in t:
-            t = f"CPLPtr<{t.replace('$','')}>"
+        if t == "void": return ""
+        ptrCounter = 0
+        for i in t:
+            if i == "$":
+                ptrCounter += 1
+        t = "CPLPtr<" * ptrCounter + t.replace("$", "") + ">" * ptrCounter
         code += self.tabs + t + " " + argList[1] + ";\n"
         return code
     def CreateList(self, instList, instIdx, argList):
@@ -84,7 +88,7 @@ class Converter():
             code = self.tabs + argList[1] + " " + argList[0] + "("
             functionDefString = code
         else:
-            code = f"{self.tabs}auto {argList[0]} = []("
+            code = f"{self.tabs}auto {argList[0]} = [&]("
             functionDefString = f"{argList[1]} (*{argList[0]})("
         functionArgumentList = argList[2].split("~")
         paramString = ""
@@ -107,7 +111,10 @@ class Converter():
     def GetMemoryAddress(self, instList, instIdx, argList):
         return f"{self.tabs}{argList[0]} = &({argList[1]});\n"
     def Call(self, instList, instIdx, argList):
-        code = self.tabs + argList[1] + "("
+        string = ""
+        if argList[0] != "void":
+            string = argList[0] + " = "
+        code = self.tabs + string + argList[1] + "("
         for i in range(2, len(argList)):
             code += argList[i]
             if i != len(argList)-1:
@@ -132,6 +139,9 @@ class Converter():
         return code
     def Nop(self, instList, instIdx, argList):
         return ""
+    def DrefPtr(self, instList, instIdx, argList):
+        code = self.tabs + f"{argList[0]} = *({argList[1]});\n"
+        return code
     ###########
     #stuff
     ###########
@@ -177,6 +187,7 @@ class Converter():
             [">>", self.DoubleOperandOperation],
             ["<<", self.DoubleOperandOperation],
             ["&", self.GetMemoryAddress],
+            ["$", self.DrefPtr],
             [".", self.DotOperator]
         ]
         for i in lst:
@@ -204,6 +215,7 @@ class Converter():
 #define f32 float
 #define UNKNOWN int
 #define byte unsigned char
+#define ui8 byte
 
 #define VARTYPE sizeof(int)
 
@@ -215,6 +227,11 @@ void printf(f32 value){
 }
 void printn(i32 value){
     std::cout << value;
+}
+CPLPtr<ui8> shalloc(i32 size){
+    CPLPtr<ui8> o;
+    o.ptr = (char*)new ui8 [size];
+    return o;
 }
 
 """

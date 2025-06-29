@@ -1,29 +1,51 @@
-struct vec2{
-	i32 x;
-	i32 y;
-}
+i32 SCREEN_X = 600;
+i32 SCREEN_Y = 600;
+i32 PLAYER_SIZE_X = 20;
+i32 PLAYER_SIZE_Y = 20;
 
-fn void printVec2(vec2 a){
-	printn(a.x);
-	printc(95);
-	printn(a.y);
-	printc(10);
-	printc(13);
-}
+graphicsinit(SCREEN_X, SCREEN_Y);
 
-graphicsinit();
+i32 playerPosX = SCREEN_X / 2;
+i32 playerPosY = SCREEN_Y - PLAYER_SIZE_Y - 5;
+
+ui8$ screenBuffer = shalloc(SCREEN_X * SCREEN_Y * 3);
+
+fn void drawScreenBuffer(){
+	i32 x = 0;
+	i32 counter = 0;
+	while x < SCREEN_X{
+		i32 y = 0;
+		while y < SCREEN_Y{
+			drawpixel(x,y,
+				$(screenBuffer + counter),
+				$(screenBuffer + counter + 1),
+				$(screenBuffer + counter + 2),
+			);
+			counter = counter + 3;
+			y = y + 1;
+		}
+		x = x + 1;
+	}
+}
+fn void drawPlayer(){
+	i32 x = 0;
+	while x < PLAYER_SIZE_X{
+		i32 y = 0;
+		while y < PLAYER_SIZE_Y{
+			i32 screenPos = ((playerPosX + x) * SCREEN_X + (playerPosY + y)) * 3;
+			$(screenBuffer + screenPos) = 255;
+			$(screenBuffer + screenPos + 1) = 0;
+			$(screenBuffer + screenPos + 2) = 30;
+			y = y + 1;
+		}
+		x = x + 1;
+	}
+}
 
 while 1{
-	i32 counter1 = 0;
-	while counter1 < 10{
-		i32 counter2 = 0;
-		while counter2 < 10{
-			drawpixel(counter1, counter2, 255, 0, 0);
-			counter2 = counter2 + 1;
-		}
-		counter1 = counter1 + 1;
-	}
-	graphicssleep(10);
+	drawPlayer();
+	drawScreenBuffer();
+	graphicssleep(1000);
 }
 
 

@@ -17,6 +17,9 @@ struct CPLPtr{
     void operator=(void* value){
         ptr = (char*)value;
     }
+    void operator=(unsigned long long value){
+        ptr = (char*)value;
+    }
     template<class K>
     void operator=(CPLPtr<K> value){
         ptr = value.ptr;
@@ -32,5 +35,15 @@ struct CPLPtr{
         o.value = value + b.value;
         return o;
     }
+    T** operator&(){
+        return (T**)&ptr;
+    }
 };
 
+template<class T>
+CPLPtr<T> operator+(CPLPtr<T> a , int b){
+    CPLPtr<T> o;
+    o.ptr = nullptr;
+    o.value = a.value + b;
+    return o;
+}

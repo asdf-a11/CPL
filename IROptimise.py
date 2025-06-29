@@ -6,11 +6,19 @@ import Struct
 import IR
 import copy
 import Operators
+import Function
 
 arithmeticInstructionNameList=[
     "+","-","/","*","%"
 ]
 
+inbuiltFunctionList = [
+    Function.Function("_shalloc", ["ui8$"], ["i32"], ["size"]),
+    Function.Function("_graphicsinit", ["i32"], ["i32", "i32"], ["x","y"]),
+    Function.Function("_drawpixel", ["i32"], ["i32"]*5, list("xyrgb")),
+    Function.Function("_shalloc", ["i32"], ["i32"], ["ticks"]),
+    Function.Function("_printn", ["void"], ["i32"], ["number"]),
+]
 
 variableNameCounter = 0
 def GetNewTempVarName():
@@ -102,6 +110,27 @@ def GetArgumentType(argument, scopeList):
         return Types.i32Type
     var = GetVaraibleFromScopeList(argument, scopeList)
     return var.dataType
+def EvaluateDataTypesFromTypeList(typeList:list) -> Types.Type:
+    #float allways win
+    #ptr win next
+    #Then bigger wins
+    floatSizeList = []
+    for t in typeList:
+        floatSizeList.append(-1 if t.style != "float" else t.sizeInBytes)
+    largestFloat = argMax(floatSizeList)
+    if largestFloat == -1:
+        #Look for ptr
+        for t in typeList:
+            if t.isPtr != 0:
+                return copy.deepcopy(t)
+        #Return biggest data type
+        sizeList = []
+        for t in typeList:
+            sizeList.append(t.sizeInBytes)
+        largestDataType = argMax(sizeList)
+        return copy.deepcopy(typeList[largestDataType])
+    else:
+        return copy.deepcopy(typeList[largestFloat])
 def UpdateVarTypeFromArithmetic(argList, scopeList):
     writeIntoVar = GetVaraibleFromScopeList(argList[0], scopeList)
     type1 = GetArgumentType(argList[1], scopeList)
@@ -113,6 +142,11 @@ def UpdateVarTypeFromArithmetic(argList, scopeList):
     else:
         type2 = None
     if writeIntoVar.hardSetType == False:
+
+        writeIntoVar.dataType = EvaluateDataTypesFromTypeList([type1, type2])
+
+
+        '''
         isStyleFloat = writeIntoVar.dataType.style == "float"
         isStyleFloat = isStyleFloat or type1.style == "float"
         if type2 != None:
@@ -142,7 +176,7 @@ def UpdateVarTypeFromArithmetic(argList, scopeList):
 
         writeIntoVar.dataType = Types.GetTypeByStyleAndSize(style, maxSize)
         writeIntoVar.dataType.isPtr = isPtr
-
+        '''
         SetVariable(writeIntoVar.name, writeIntoVar.dataType, scopeList)   
 def UpdateVarTypeFromMov(argList, scopeList):
     writeIntoVar = GetVaraibleFromScopeList(argList[0], scopeList)
@@ -172,7 +206,7 @@ def BackTrackAndSetTypes(idx, instList, scopeList):
         c = c or instList[idx].name == "CREATE_TEMP_VAR"
         if c:
             var = GetVaraibleFromScopeList(instList[idx].argList[1], scopeList)
-            instList[idx].argList[0] = var.dataType.name + ("$" if var.dataType.isPtr else "")
+            instList[idx].argList[0] = var.dataType.name + "$" * var.dataType.isPtr
         idx += 1
 def InstListToProgram(instList):
     out = ""
@@ -201,7 +235,7 @@ def UpdateVarTypeFromGetAddress(argList, scopeList):
     if writeIntoVar.hardSetType == False:
         typ = GetArgumentType(argList[1], scopeList)
         writeIntoVar.dataType = copy.deepcopy(typ)
-        writeIntoVar.dataType.isPtr = True
+        writeIntoVar.dataType.isPtr += 1
         SetVariable(writeIntoVar.name, writeIntoVar.dataType, scopeList)  
 def GetVarTypeFromStruct(structName, attribName, scopeList):
     struct = None
@@ -222,6 +256,42 @@ def LogStructure(argList, scopeList):
     struct.varTypeList = argList[1].split("~")[0::2]
     struct.varNameList = argList[1].split("~")[1::2]
     scopeList[-1].append(struct)
+def UpdateVarTypeFromDref(argList, scopeList):
+    writeIntoVar = GetVaraibleFromScopeList(argList[0], scopeList)
+    if writeIntoVar.hardSetType == False:
+        typ = GetArgumentType(argList[1], scopeList)
+        writeIntoVar.dataType = copy.deepcopy(typ)
+        writeIntoVar.dataType.isPtr = 0
+        SetVariable(writeIntoVar.name, writeIntoVar.dataType, scopeList)
+def UpdateVarTypeFromCall(instRef, scopeList):
+    argList = instRef.argList
+    writeIntoVar = GetVaraibleFromScopeList(argList[0], scopeList)
+    if writeIntoVar.hardSetType == False:
+        #Get return type of function
+        for scope in reversed(scopeList):
+            for i in scope:
+                if type(i) == Function.Function:
+                    if i.name == argList[1]:
+                        #TODO handle multiple returns probably by generating a struct
+                        #Perhaps do this when creating the function unless struct is allready
+                        #created for that combination of data types
+                        writeIntoVar.dataType = Types.GetTypeByName(i.returnTypeList[0])
+                        SetVariable(writeIntoVar.name, writeIntoVar.dataType, scopeList)
+                        if writeIntoVar.dataType.name == "void":
+                            instRef.argList[0] = "void"
+                        return
+        #else assume it is a int
+        writeIntoVar.dataType = copy.deepcopy(Types.i32Type)
+        SetVariable(writeIntoVar.name, writeIntoVar.dataType, scopeList)
+def LogCreatedFunction(argList, scopeList):
+    scopeList[-1].append(
+        Function.Function(
+            name=argList[0],
+            returnTypeList=argList[1].split("~"),
+            perameterTypeList=argList[2].split("~")[0::2],
+            perameterNameList=argList[2].split("~")[1::2]
+        )
+    )
 def EvaluateDataTypes(instList): 
     def RemoveVar_Type(inst, scopeList):
         if len(inst.argList) == 0: return
@@ -231,17 +301,23 @@ def EvaluateDataTypes(instList):
             inst.argList[adx] = inst.argList[adx].replace("VAR_TYPE",vt.name)   
     scopeList = []
     openScopePositionList = []
+    firstOpenScope = True
     for idx,inst in enumerate(instList):   
         RemoveVar_Type(inst, scopeList)     
         if inst.name == "OPENSCOPE":
             scopeList.append([])
             openScopePositionList.append(idx+1)
+            if firstOpenScope:
+                scopeList[-1] += inbuiltFunctionList
+            firstOpenScope = False
         elif inst.name == "CLOSESCOPE":
             BackTrackAndSetTypes(openScopePositionList[-1], instList, scopeList)
             openScopePositionList.pop(-1)
             scopeList.pop(-1)
         elif inst.name == "CREATE" or inst.name == "CREATE_ARGUMENT" or inst.name == "CREATE_TEMP_VAR":
             LogCreatedVariable(inst.argList, scopeList[-1])
+        elif inst.name == "CREATE_FUNCTION" and firstOpenScope == False:
+            LogCreatedFunction(inst.argList, scopeList)
         elif inst.name == "CREATE_STRUCT":
             LogStructure(inst.argList, scopeList)
         elif inst.name in arithmeticInstructionNameList:
@@ -250,6 +326,10 @@ def EvaluateDataTypes(instList):
             UpdateVarTypeFromDot(inst.argList, scopeList)
         elif inst.name == "&":
             UpdateVarTypeFromGetAddress(inst.argList, scopeList)
+        elif inst.name == "$":
+            UpdateVarTypeFromDref(inst.argList, scopeList)
+        elif inst.name == "CALL":
+            UpdateVarTypeFromCall(inst, scopeList)
         elif inst.name == "MOV":
             UpdateVarTypeFromMov(inst.argList, scopeList)
         
@@ -380,7 +460,7 @@ def EvaluateMemoryAddressOfTempVars(instList):
                 RVS = TempVariable.REPLACE_VARAIBLE_STRING
                 if inst.name == "$":
                     writeIntoVar.addressInstList.append(
-                        IR.Instruction("MOV", [RVS, inst.argList[0]])
+                        IR.Instruction("MOV", [RVS, inst.argList[1]])
                     )
                 elif inst.name == ".":
                     tempVar = GetNewTempVarName()

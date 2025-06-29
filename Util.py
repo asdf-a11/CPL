@@ -61,7 +61,22 @@ def InsertStringIntoString(org, toInsert, idx):
     s1 = org[:idx]
     s2 = org[idx:]
     return s1 + toInsert + s2
-def FloatToIEEE754(x):
-    return str(ieee754.single(x)).replace(" ","")
-    
-        
+#def FloatToIEEE754(x):
+#    return str(ieee754.single(x)).replace(" ","")
+
+def argMin(lst):
+    smallestIdx = -1
+    smallestValue = lst[0]
+    for idx,i in enumerate(lst):
+        if i < smallestValue:
+            smallestIdx = idx
+    return smallestIdx
+
+def argMax(lst):
+    largestIdx = 0
+    largestValue = lst[0]
+    for idx, i in enumerate(lst):
+        if i > largestValue:
+            largestValue = i
+            largestIdx = idx
+    return largestIdx

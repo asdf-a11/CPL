@@ -93,8 +93,8 @@ class Exp():
             argumentNameList.insert(0,functionName); argumentNameList.insert(0,n)
             irList.append(IR.Instruction("CALL", argumentNameList))
             replaceToken = Lexer.Token()
-            replaceToken.tokenContent = n[1:]
-            replaceToken.tokenSubset = n[1:]
+            replaceToken.tokenContent = n#[1:]
+            replaceToken.tokenSubset = n#[1:]
             replaceToken.tokenType = "NAME"    
             return replaceToken       
         def ReplaceListWithVaraible(irList, tdx):
