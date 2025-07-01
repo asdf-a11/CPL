@@ -343,7 +343,7 @@ int graphicsinit(int xsize, int ysize){
     return 0;
 }
 void graphicspump(){
-
+    window.Pump();
 }
 int drawpixel(int x, int y, int r, int g, int b){
     window.DrawPixel(x,y,(byte)r,(byte)g,(byte)b);
@@ -352,4 +352,7 @@ int drawpixel(int x, int y, int r, int g, int b){
 int graphicssleep(int ticks){
     std::this_thread::sleep_for(std::chrono::milliseconds(ticks));
     return 0;
+}
+int getkeypress(int keyId){
+    return window.IsKeyPressed(keyId) ? 1 : 0;
 }

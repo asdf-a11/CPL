@@ -7,9 +7,24 @@ graphicsinit(SCREEN_X, SCREEN_Y);
 
 i32 playerPosX = SCREEN_X / 2;
 i32 playerPosY = SCREEN_Y - PLAYER_SIZE_Y - 5;
+i32 playerSpeed = 30;
 
 ui8$ screenBuffer = shalloc(SCREEN_X * SCREEN_Y * 3);
 
+i32 enemyCount = 10;
+i32[enemyCount] enemyXList;
+i32[enemyCount] enemyYList;
+i32 enemySizeX = 20;
+i32 enemySizeY = 20;
+
+fn void initEnemies(){
+	i32 counter = 0;
+	while counter < enemyCount{
+		enemyXList[counter] = counter * 30 + 10;
+		enemyYList[counter] = counter * 10;
+		counter = counter + 1;
+	}
+}
 fn void drawScreenBuffer(){
 	i32 x = 0;
 	i32 counter = 0;
@@ -27,25 +42,63 @@ fn void drawScreenBuffer(){
 		x = x + 1;
 	}
 }
-fn void drawPlayer(){
+fn void drawRect(i32 xPos, i32 yPos, i32 sx, i32 sy){
 	i32 x = 0;
-	while x < PLAYER_SIZE_X{
+	while x < sx{
 		i32 y = 0;
-		while y < PLAYER_SIZE_Y{
-			i32 screenPos = ((playerPosX + x) * SCREEN_X + (playerPosY + y)) * 3;
-			$(screenBuffer + screenPos) = 255;
-			$(screenBuffer + screenPos + 1) = 0;
-			$(screenBuffer + screenPos + 2) = 30;
+		while y < sy{
+			i32 screenPos = ((xPos + x) * SCREEN_X + (yPos + y)) * 3;
+			if screenPos < SCREEN_X * SCREEN_Y * 3 - 3 or screenPos < 0{
+				$(screenBuffer + screenPos) = 255;
+				$(screenBuffer + screenPos + 1) = 0;
+				$(screenBuffer + screenPos + 2) = 30;
+			}
 			y = y + 1;
 		}
 		x = x + 1;
 	}
 }
+fn void drawPlayer(){
+	drawRect(playerPosX, playerPosY, PLAYER_SIZE_Y, PLAYER_SIZE_X);
+}
+fn void drawEnemies(){
+	i32 counter = 0;
+	while counter < enemyCount{
+		drawRect(enemyXList[counter], enemyYList[counter], enemySizeX, enemySizeY);
+		counter = counter + 1;
+	}
+}
+fn void clearScreen(){
+	i32 counter = 0;
+	while counter < SCREEN_X * SCREEN_Y * 3{
+		$(screenBuffer + counter) = 0;
+		counter = counter + 1;
+	}
+}
+fn void updatePlayer(){
+	if(getkeypress('a') == 1){
+		playerPosX = playerPosX - playerSpeed;
+	}
+	if(getkeypress('d') == 1){
+		playerPosX = playerPosX + playerSpeed;
+	}
+}
+fn void println(){
+	printc(10);
+	printc(13);
+}
+
+
+initEnemies();
 
 while 1{
+	graphicspump();
+	updatePlayer();
 	drawPlayer();
+	drawEnemies();
 	drawScreenBuffer();
-	graphicssleep(1000);
+	graphicssleep(500);
+	clearScreen();
 }
 
 

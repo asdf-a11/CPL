@@ -142,6 +142,9 @@ class Converter():
     def DrefPtr(self, instList, instIdx, argList):
         code = self.tabs + f"{argList[0]} = *({argList[1]});\n"
         return code
+    def IndexOperator(self, instList, instIdx, argList):
+        code = f"{self.tabs}{argList[0]} = {argList[1]}[{argList[2]}];\n"
+        return code
     ###########
     #stuff
     ###########
@@ -188,7 +191,8 @@ class Converter():
             ["<<", self.DoubleOperandOperation],
             ["&", self.GetMemoryAddress],
             ["$", self.DrefPtr],
-            [".", self.DotOperator]
+            [".", self.DotOperator],
+            ["[]", self.IndexOperator]
         ]
         for i in lst:
             if i[0] == instName:

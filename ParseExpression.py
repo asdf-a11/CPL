@@ -41,17 +41,29 @@ class Exp():
             newIdx = indexExp.ReadIn(self.expTokens, tdx, escChar="]", oppEscChar="[")
             for i in range(tdx, newIdx):
                 self.expTokens.pop(tdx)
+
+            indexTempVar = IR.Variable(expTemp=True)
+            irList.append(IR.Instruction("CREATE_TEMP_VAR", ["UNKNOWN",indexTempVar.name])) 
+            #Moves contents of [] into tempVar
+            expLevel += 1
+            newCode = indexExp.ToIasm(indexTempVar.name)
+            irList += newCode
+            valueTempVar = IR.Variable(expTemp=True)
+            irList.append(IR.Instruction("CREATE_TEMP_VAR", ["UNKNOWN",valueTempVar.name])) 
+            irList.append(IR.Instruction("[]", [valueTempVar.name, name, indexTempVar.name])) 
+            '''
             tempVarName = "_#EXP_INDEX_" + str(expLevel)
             irList.append(IR.Instruction("CREATE", ["UNKNOWN",tempVarName])) 
             expLevel += 1
             newCode = indexExp.ToIasm(tempVarName)
             irList += newCode
-            irList.append(IR.Instruction("*", [tempVarName, tempVarName, "VAR_TYPE"])) 
+            irList.append(IR.Instruction("*", [tempVarName, tempVarName, "VAR_TYPE_SIZE"])) 
             irList.append(IR.Instruction("LDR", [tempVarName, name, tempVarName])) 
+            '''
             self.expTokens.pop(tdx)#delete closing ]
             replaceToken = Lexer.Token()
-            replaceToken.tokenContent = tempVarName
-            replaceToken.tokenSubset = tempVarName
+            replaceToken.tokenContent = valueTempVar.name
+            replaceToken.tokenSubset = valueTempVar.name
             replaceToken.tokenType = "NAME" 
             self.expTokens.insert(tdx, replaceToken)
         def ReplaceFunctionWithTempVar(irList):
@@ -79,22 +91,24 @@ class Exp():
                     currentExpList.append(token)
             argumentNameList = []
             for argumentTokenList in argumentExpList:
-                tempVarName = "_#EXP_FUNCTION_ARGUMENT_"+str(expLevel)
-                irList.append(IR.Instruction("CREATE", ["UNKNOWN",tempVarName]))                
+                tempVar = IR.Variable(expTemp=True)
+                #tempVarName = "_#EXP_FUNCTION_ARGUMENT_"+str(expLevel)
+                irList.append(IR.Instruction("CREATE_TEMP_VAR", ["UNKNOWN",tempVar.name]))                
                 exp = Exp()
                 exp.ReadIn(argumentTokenList, 0, escChar=None)
                 exp.GenExpList(irList=irList)
-                irList += exp.ToIasm(tempVarName)
-                argumentNameList.append(tempVarName)
+                irList += exp.ToIasm(tempVar.name)
+                argumentNameList.append(tempVar.name)
                 expLevel += 1
-            n = "_#EXP_FUNCTION_RETURN_"+str(expLevel)
-            irList.append(IR.Instruction("CREATE", ["UNKNOWN", n]))
+            #n = "_#EXP_FUNCTION_RETURN_"+str(expLevel)
+            tempVar = IR.Variable(expTemp=True)
+            irList.append(IR.Instruction("CREATE_TEMP_VAR", ["UNKNOWN", tempVar.name]))
             expLevel += 1
-            argumentNameList.insert(0,functionName); argumentNameList.insert(0,n)
+            argumentNameList.insert(0,functionName); argumentNameList.insert(0,tempVar.name)
             irList.append(IR.Instruction("CALL", argumentNameList))
             replaceToken = Lexer.Token()
-            replaceToken.tokenContent = n#[1:]
-            replaceToken.tokenSubset = n#[1:]
+            replaceToken.tokenContent = tempVar.name#[1:]
+            replaceToken.tokenSubset = tempVar.name#[1:]
             replaceToken.tokenType = "NAME"    
             return replaceToken       
         def ReplaceListWithVaraible(irList, tdx):
@@ -123,7 +137,7 @@ class Exp():
             varList = []
             for exp in listExpList:
                 var = IR.Variable(True)
-                irList.append(IR.Instruction("CREATE", ["UNKNOWN", var.name]))
+                irList.append(IR.Instruction("CREATE_TEMP_VAR", ["UNKNOWN", var.name]))
                 genIr = []
                 exp.GenExpList(genIr)
                 genIr += exp.ToIasm(var.name, writeToAddr=False)
@@ -226,7 +240,7 @@ class Exp():
             if type(i) == Exp:
                 expResultList.append(IR.Variable(expTemp=True))
                 i.resultVar = expResultList[-1]
-                instList.append(IR.Instruction("CREATE", [Types.unknownType.name, expResultList[-1].name]))
+                instList.append(IR.Instruction("CREATE_TEMP_VAR", [Types.unknownType.name, expResultList[-1].name]))
                 instList += i.ToIasm(expResultList[-1].name)
         if writeInto != None:
             if len(self.expTokens) == 1:

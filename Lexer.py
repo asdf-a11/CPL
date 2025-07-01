@@ -6,7 +6,7 @@ import copy
 Operators.Init()
 Types.Init()
 
-specialCharacters = list(";:[]{}()~,#<>=/+-.*!$%^&~¬?¬|\n\t ")
+specialCharacters = list(";:[]{}()~,#<>=/+-.*!$%^&~¬?¬|\n\t \'")
 specialCharactersTokens = list(";:[]{}()~,.?=¬|")
 
 keyWordList = [
@@ -212,6 +212,32 @@ def ReformConstFloats(tokenList):
                     newToken.tokenSubset = reformedString
                     tokenList[idx-1] = newToken
         idx += 1
+def GenerateTokenFromConstChar(idx, splitList, tokenList):
+    if splitList[idx] == "'":
+        charString = ""
+        hasClosingChar = False
+        idx += 1
+        while idx < len(splitList):
+            if splitList[idx] == "'":
+                hasClosingChar = True
+                break
+            charString += splitList[idx]
+            idx += 1
+        if hasClosingChar == False:
+            raise Exception("Unclosed character constant at index: " + str(idx))
+        value = None
+        try:
+            value = ord(charString)
+        except Exception:
+            raise Exception("Cannot get ord value of character: " + charString)
+        t = Token()
+        t.tokenType = "CONST"
+        t.tokenSubset = value
+        t.tokenContent = value
+        tokenList.append(t)
+        return 1 + len(charString) + 1  # +1 for the closing ' and opening '
+    return 0
+
 def GenerateTokenList(splitList):
     tokenList = []
     counter = 0
@@ -223,12 +249,18 @@ def GenerateTokenList(splitList):
             counter += opSize; continue
         if GenerateTokenFromType(counter,splitList,tokenList):
             counter += 1; continue
+        #TODO weird
         if GenerateTokenFromBase10Number(counter,splitList,tokenList):
             counter += 1; continue
         if GenerateTokenFromBase16Number(counter,splitList,tokenList):
             counter += 1; continue
         if GenerateTokenFromBase2Number(counter,splitList,tokenList):
             counter += 1; continue
+        
+        v = GenerateTokenFromConstChar(counter, splitList, tokenList)
+        counter += v
+        if v != 0: continue
+
         if GenerateTokenFromWhiteSpace(counter,splitList,tokenList):
             counter += 1; continue
         if GenerateTokenFromSpecialChar(counter,splitList,tokenList):

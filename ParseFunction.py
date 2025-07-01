@@ -320,8 +320,6 @@ functionList = [
 
 def GenerateIR(tokenList):
     global closeScopeAdditionCode
-    #RemoveDotNotation(tokenList)
-    #Lexer.PrintTokenList(tokenList)
     closeScopeAdditionCode = []
     instList = []
     idx = 0
@@ -340,53 +338,4 @@ def GenerateIR(tokenList):
         if foundTokenCombo == False:
             raise Exception("Failed to find token combo idx -> " + str(idx))
     return instList
-        
-def RemoveDotNotation(tokenList) -> None:
-    for idx,token in enumerate(tokenList):
-        if token.tokenType == ".":
-            if idx-1 < 0 or idx+1>=len(tokenList):
-                raise Exception("Invalid position for .")
-            if tokenList[idx-1].tokenType == "NAME" and tokenList[idx+1].tokenType == "NAME":
-                newToken = Lexer.Token()
-                newToken.tokenType = "NAME"
-                newToken.tokenSubset = tokenList[idx-1].tokenSubset + "." + tokenList[idx+1].tokenSubset
-                newToken.newLine = tokenList[idx].newLine
-                newToken.whiteSpace = tokenList[idx].whiteSpace
-                tokenList[idx] = newToken
-                tokenList.pop(idx+1)
-                tokenList.pop(idx-1)
-    '''
-    for idx,token in enumerate(tokenList):
-        if token.tokenType == ".":
-            if idx-1 < 0 or idx+1>=len(tokenList):
-                raise Exception("Invalid position for .")
-            if tokenList[idx-1].tokenType == "NAME" and tokenList[idx+1].tokenType == "NAME":
-                typeInstance = tokenList[idx-1].tokenSubset
-                attribName = tokenList[idx+1].tokenSubset
-                #Remove the two tokens
-                tokenList.pop(idx+1)
-                tokenList.pop(idx)
-                tokenList.pop(idx-1)
-                #Replace with ptr notation
-                #g.a --> UNKNOWN ptr = g+attribpos(decltype(g),a);
-                # $ptr
-                nl,ws = tokenList[idx].newLine, tokenList[idx].whiteSpace
-                toInsert = [
-                    Lexer.Token("$"),
-                    Lexer.Token("("),
-                    Lexer.Token("NAME",typeInstance),
-                    Lexer.Token("OPERATOR", "+"),
-                    Lexer.Token("NAME","attribpos"),
-                    Lexer.Token("("),
-                    Lexer.Token("NAME", "decltype"),
-                    Lexer.Token("("),
-                    Lexer.Token("NAME", typeInstance),
-                    Lexer.Token(")"),
-                    Lexer.Token("NAME", attribName),
-                    Lexer.Token(")"),
-                    Lexer.Token(")")
-                ]
-                for i in reversed(toInsert):
-                    tokenList.insert(idx-1, i)
-                pass
-    '''
+

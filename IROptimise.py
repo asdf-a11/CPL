@@ -18,6 +18,8 @@ inbuiltFunctionList = [
     Function.Function("_drawpixel", ["i32"], ["i32"]*5, list("xyrgb")),
     Function.Function("_shalloc", ["i32"], ["i32"], ["ticks"]),
     Function.Function("_printn", ["void"], ["i32"], ["number"]),
+    Function.Function("_printc", ["void"], ["i32"], ["character"]),
+    Function.Function("_graphicspump", ["void"], [], []),
 ]
 
 variableNameCounter = 0
@@ -296,9 +298,19 @@ def EvaluateDataTypes(instList):
     def RemoveVar_Type(inst, scopeList):
         if len(inst.argList) == 0: return
         if inst.name not in Operators.operatorNameList: return
-        vt = GetArgumentType(inst.argList[1], scopeList)
-        for adx in range(1,len(inst.argList)):
-            inst.argList[adx] = inst.argList[adx].replace("VAR_TYPE",vt.name)   
+
+        for adx in range(1, len(inst.argList)):
+            if "VAR_TYPE" in inst.argList[adx]:
+                l = inst.argList[adx].split("~")
+                if len(l) != 2:
+                    raise Exception("you plonker")
+                vt = GetArgumentType(l[1], scopeList)
+                inst.argList[adx] = vt.name
+
+        #vt = GetArgumentType(inst.argList[1], scopeList)
+        #for adx in range(1,len(inst.argList)):
+        #    inst.argList[adx] = inst.argList[adx].replace("VAR_TYPE",vt.name) 
+          
     scopeList = []
     openScopePositionList = []
     firstOpenScope = True
@@ -453,6 +465,8 @@ def EvaluateMemoryAddressOfTempVars(instList):
                 addrInstList = tempVar.GetAddressInstructionList(writeIntoName=inst.argList[0])
                 for i in reversed(addrInstList):
                     instList.insert(instructionIndex, i)
+                #Means instruction is first instruction in addrInstList
+                continue
         #Store memory address instructions
         else:
             writeIntoVar = GetTempVar(scopeList, inst.argList[0])
@@ -464,14 +478,26 @@ def EvaluateMemoryAddressOfTempVars(instList):
                     )
                 elif inst.name == ".":
                     tempVar = GetNewTempVarName()
+                    typeOfStruct = GetNewTempVarName()
                     writeIntoVar.addressInstList += [
                         IR.Instruction("CREATE_TEMP_VAR", ["UNKNOWN", tempVar]),
                         IR.Instruction("&", [tempVar, inst.argList[1]]),
-                        IR.Instruction("+", [RVS, tempVar, f"VAR_TYPE::{inst.argList[2]}"])
+                        IR.Instruction("CALL", [typeOfStruct, "decltype", inst.argList[1]]),
+                        IR.Instruction("+", [RVS, tempVar, f"{typeOfStruct}::{inst.argList[2]}"])
                     ]
                 elif inst.name == "MOV":
                     writeIntoVar.addressInstList += [
                         IR.Instruction("&", [RVS, inst.argList[1]]),
+                    ]
+                elif inst.name == "[]":
+                    tempVar = GetNewTempVarName()
+                    tempVar2 = GetNewTempVarName()
+                    writeIntoVar.addressInstList += [
+                        IR.Instruction("CREATE_TEMP_VAR", ["UNKNOWN", tempVar]),
+                        IR.Instruction("*", [tempVar, inst.argList[2], f"VAR_TYPE~{inst.argList[1]}"]),
+                        IR.Instruction("CREATE_TEMP_VAR", ["UNKNOWN", tempVar2]),
+                        IR.Instruction("&", [tempVar2, inst.argList[1]]),
+                        IR.Instruction("+", [RVS, tempVar, tempVar2])
                     ]
         instructionIndex += 1
 
