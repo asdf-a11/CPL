@@ -346,6 +346,12 @@ def ReplaceVarWithKnownType(inst, scopeList):
                             break
             if f: break
     return newInst
+def UpdateVarTypeFromListIndex(argList, scopeList):
+    writeIntoVar = GetVaraibleFromScopeList(argList[0], scopeList)
+    if writeIntoVar.hardSetType == False:
+        listVar = GetVaraibleFromScopeList(argList[1], scopeList)
+        writeIntoVar.dataType = copy.deepcopy(listVar.dataType)
+        SetVariable(writeIntoVar.name, writeIntoVar.dataType, scopeList)
 def EvaluateDataTypes(instList): 
     def RemoveVar_Type(inst, scopeList):
         if len(inst.argList) == 0: return
@@ -400,6 +406,8 @@ def EvaluateDataTypes(instList):
             UpdateVarTypeFromDot(inst.argList, scopeList)
         elif inst.name == "&":
             UpdateVarTypeFromGetAddress(inst.argList, scopeList)
+        elif inst.name == "[]":
+            UpdateVarTypeFromListIndex(inst.argList, scopeList)
         elif inst.name == "$":
             UpdateVarTypeFromDref(inst.argList, scopeList)
         elif inst.name == "CALL":

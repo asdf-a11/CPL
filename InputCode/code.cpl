@@ -11,6 +11,7 @@ i32 playerSpeed = 30;
 
 ui8$ screenBuffer = shalloc(SCREEN_X * SCREEN_Y * 3);
 
+i32 enemySpeed = 20;
 i32 enemyCount = 10;
 i32[enemyCount] enemyXList;
 i32[enemyCount] enemyYList;
@@ -75,6 +76,16 @@ fn void clearScreen(){
 		counter = counter + 1;
 	}
 }
+fn void updateEnemies(){
+	i32 counter = 0;
+	while counter < enemyCount{
+		enemyYList[counter] = enemyYList[counter] + enemySpeed;
+		if enemyYList[counter] > 600{
+			enemyYList[counter] = 0;
+		}
+		counter = counter + 1;
+	}
+}
 fn void updatePlayer(){
 	if(getkeypress('a') == 1){
 		playerPosX = playerPosX - playerSpeed;
@@ -94,6 +105,7 @@ initEnemies();
 while 1{
 	graphicspump();
 	updatePlayer();
+	updateEnemies();
 	drawPlayer();
 	drawEnemies();
 	drawScreenBuffer();
