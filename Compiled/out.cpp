@@ -14,6 +14,7 @@
 #define UNKNOWN int
 #define byte unsigned char
 #define ui8 byte
+#define type char
 
 #define VARTYPE sizeof(int)
 
@@ -164,13 +165,20 @@ void cplMain(void)
 			i32 EXPTEMPVAR38;
 			EXPTEMPVAR38 = counter;
 			UNKNOWN EXPTEMPVAR39;
-			CPLPtr<UNKNOWN> EXPTEMPVAR40;
+			CPLPtr<i32> EXPTEMPVAR40;
 			i32 EXPVAR8;
 			EXPVAR8 = counter;
 			UNKNOWN EXPVAR9;
 			EXPVAR9 = enemyXList[EXPVAR8];
 			EXPTEMPVAR39 = EXPVAR9;
-			EXPTEMPVAR40 = &(EXPVAR9);
+			i32 IROPT0;
+			type IROPT3;
+			i32 IROPT2;
+			IROPT2 = sizeof(i32);
+			IROPT0 = EXPVAR8 * IROPT2;
+			CPLPtr<i32> IROPT1;
+			IROPT1 = &(enemyXList);
+			EXPTEMPVAR40 = IROPT0 + IROPT1;
 			i32 EXPTEMPVAR41;
 			i32 EXPVAR10;
 			EXPVAR10 = counter * 30;
@@ -179,13 +187,20 @@ void cplMain(void)
 			i32 EXPTEMPVAR42;
 			EXPTEMPVAR42 = counter;
 			UNKNOWN EXPTEMPVAR43;
-			CPLPtr<UNKNOWN> EXPTEMPVAR44;
+			CPLPtr<i32> EXPTEMPVAR44;
 			i32 EXPVAR11;
 			EXPVAR11 = counter;
 			UNKNOWN EXPVAR12;
 			EXPVAR12 = enemyYList[EXPVAR11];
 			EXPTEMPVAR43 = EXPVAR12;
-			EXPTEMPVAR44 = &(EXPVAR12);
+			i32 IROPT4;
+			type IROPT7;
+			i32 IROPT6;
+			IROPT6 = sizeof(i32);
+			IROPT4 = EXPVAR11 * IROPT6;
+			CPLPtr<i32> IROPT5;
+			IROPT5 = &(enemyYList);
+			EXPTEMPVAR44 = IROPT4 + IROPT5;
 			i32 EXPTEMPVAR45;
 			EXPTEMPVAR45 = counter * 10;
 			*(EXPTEMPVAR44) = EXPTEMPVAR45;

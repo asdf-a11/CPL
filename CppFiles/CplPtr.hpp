@@ -47,3 +47,11 @@ CPLPtr<T> operator+(CPLPtr<T> a , int b){
     o.value = a.value + b;
     return o;
 }
+
+template<class T>
+CPLPtr<T> operator+(int b, CPLPtr<T> a){
+    CPLPtr<T> o;
+    o.ptr = nullptr;
+    o.value = a.value + b;
+    return o;
+}

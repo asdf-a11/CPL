@@ -144,7 +144,7 @@ class Exp():
                 irList += genIr
                 varList.append(var.name)
             listName = IR.Variable(True)
-            irList.append(IR.Instruction("CREATELIST", ["UNKNOWN", listName.name, len(varList)]))
+            irList.append(IR.Instruction("CREATE", ["UNKNOWN", listName.name, len(varList)]))
             irList.append(IR.Instruction("SETLIST", [listName.name]+varList))
             del self.expTokens[tdx:position+1]
             listNameToken = Lexer.Token()

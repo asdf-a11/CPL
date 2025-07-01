@@ -2,11 +2,14 @@
 #include <iostream>
 
 template<class T>
-struct CPL_LIST{
+class CPL_LIST{
+private:
     T* dataList = nullptr;
     int size;
+public:
+
     CPL_LIST(int size){
-        dataList = new T[size];
+        this->dataList = new T[size];
         this->size = size;
     }
 
@@ -40,6 +43,10 @@ struct CPL_LIST{
     C(/);
 
     #undef c
+
+    T* operator&(){
+        return dataList;
+    }
 
     ~CPL_LIST(){
         delete[] dataList;

@@ -20,6 +20,7 @@ i32Type = Type("i32", "int", 4)
 i8Type = Type("i8", "int", 4)
 ui8Type = Type("ui8", "unsigned", 1)
 f32Type = Type("f32", "float", 4)
+typeType = Type("type", "type", -1)
 
 typeList = [
     unknownType,
@@ -27,7 +28,8 @@ typeList = [
     i32Type,
     i8Type,
     ui8Type,
-    f32Type
+    f32Type,
+    typeType
 ]
 
 #typeList = baseTypeList.copy()

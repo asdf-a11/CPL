@@ -29,10 +29,23 @@ def GetNewTempVarName():
     variableNameCounter += 1
     return out
 
+
+
+class Variable():
+    def __init__(self, dataType,  name, listSize):
+        self.name = name
+        self.dataType = dataType
+        self.listSize = listSize
+        self.hardSetType = False if self.dataType.name == "UNKNOWN" else True
+        #If value for Type is known then it is stored here
+        self.typeValue = None
+        pass
 class TempVariable():
     REPLACE_VARAIBLE_STRING = "##"
     def __init__(self, dataType=None, name=None, listSize=None):
+        #super().__init__(dataType, name, listSize)
         self.name = name
+        self.dataType = dataType
         self.addressInstList = []
     def GetAddressInstructionList(self, writeIntoName):
         if len(self.addressInstList) == None:
@@ -45,13 +58,6 @@ class TempVariable():
                     inst.argList[a] = writeIntoName
             ret.append(inst)
         return ret
-class Variable():
-    def __init__(self, dataType,  name, listSize):
-        self.name = name
-        self.dataType = dataType
-        self.listSize = listSize
-        self.hardSetType = False if self.dataType.name == "UNKNOWN" else True
-        pass
 class Scope():
     def __init__(self):
         self.varList = []
@@ -96,7 +102,8 @@ def LogCreatedVariable(argList, currentScope):
     if len(argList) == 2:
         listSize = 1
     else:
-        listSize = int(argList[2])    
+        listSize = None
+        #listSize = int(argList[2])    
     #currentScope.AddVariable(dataType, varName, listSize)
     currentScope.append(Variable(dataType, varName, listSize))
 def GetVaraibleFromScopeList(name, scopeList):
@@ -105,11 +112,19 @@ def GetVaraibleFromScopeList(name, scopeList):
             if v.name == name:
                 return v
     raise Exception("Failed to find varaible")
+def IsDataType(argument):
+    for i in Types.typeList:
+        if i.name == argument:
+            return i
+    return False
 def GetArgumentType(argument, scopeList):
     if IsConstant(argument):
         if "." in argument:
             return Types.f32Type
-        return Types.i32Type
+        return Types.i32Type    
+    t = IsDataType(argument)
+    if t != False:
+        return t
     var = GetVaraibleFromScopeList(argument, scopeList)
     return var.dataType
 def EvaluateDataTypesFromTypeList(typeList:list) -> Types.Type:
@@ -120,7 +135,7 @@ def EvaluateDataTypesFromTypeList(typeList:list) -> Types.Type:
     for t in typeList:
         floatSizeList.append(-1 if t.style != "float" else t.sizeInBytes)
     largestFloat = argMax(floatSizeList)
-    if largestFloat == -1:
+    if max(floatSizeList) == -1:
         #Look for ptr
         for t in typeList:
             if t.isPtr != 0:
@@ -192,6 +207,9 @@ def UpdateVarTypeFromMov(argList, scopeList):
         if condition:
             writeIntoVar.dataType = typ
             SetVariable(writeIntoVar.name, writeIntoVar.dataType, scopeList)   
+    if writeIntoVar.dataType.name == Types.typeType.name:
+        writeIntoVar.typeValue = copy.deepcopy(typ)
+        SetVariable(writeIntoVar.name, writeIntoVar.dataType, scopeList) 
 def BackTrackAndSetTypes(idx, instList, scopeList):
     openScopeCounter = 0
     while 1:
@@ -294,6 +312,40 @@ def LogCreatedFunction(argList, scopeList):
             perameterNameList=argList[2].split("~")[1::2]
         )
     )
+def EvaluateCompileTimeFunction(inst, scopeList):
+    hasMadeChanges = False
+    newInst = None
+    if inst.name == "CALL":
+        match inst.argList[1]:
+            case "_declindtype":
+                if len(inst.argList) != 3:
+                    raise Exception("Invalid number of arguments for _declindtype")
+                #Get type of variable
+                var = GetVaraibleFromScopeList(inst.argList[2], scopeList)
+                #if var.dataType.isPtr == 0:
+                #    raise Exception("Cannot get index type of non pointer variable")
+                #inst.argList[0] = f"{var.dataType.name}*"
+                #inst.argList[1] = "i32"
+                newInst = copy.deepcopy(inst)
+                newInst.name = "MOV"
+                newInst.argList = [inst.argList[0], 
+                        var.dataType.name + "$" * var.dataType.isPtr]
+                hasMadeChanges = True
+    return hasMadeChanges, newInst
+def ReplaceVarWithKnownType(inst, scopeList):
+    newInst = copy.deepcopy(inst)
+    for idx, arg in enumerate(inst.argList):
+        f = False
+        for scope in reversed(scopeList):
+            for i in scope:
+                if type(i) == Variable:
+                    if i.name == arg:
+                        if i.typeValue != None:
+                            newInst.argList[idx] = i.typeValue.name
+                            f = True
+                            break
+            if f: break
+    return newInst
 def EvaluateDataTypes(instList): 
     def RemoveVar_Type(inst, scopeList):
         if len(inst.argList) == 0: return
@@ -315,7 +367,17 @@ def EvaluateDataTypes(instList):
     openScopePositionList = []
     firstOpenScope = True
     for idx,inst in enumerate(instList):   
-        RemoveVar_Type(inst, scopeList)     
+        RemoveVar_Type(inst, scopeList)   
+        
+        hap, newInstruction = EvaluateCompileTimeFunction(inst, scopeList)
+        if hap:
+            instList[idx] = newInstruction
+            inst = newInstruction
+        
+        newInstruction = ReplaceVarWithKnownType(inst, scopeList)
+        instList[idx] = newInstruction
+        inst = newInstruction
+
         if inst.name == "OPENSCOPE":
             scopeList.append([])
             openScopePositionList.append(idx+1)
@@ -481,8 +543,9 @@ def EvaluateMemoryAddressOfTempVars(instList):
                     typeOfStruct = GetNewTempVarName()
                     writeIntoVar.addressInstList += [
                         IR.Instruction("CREATE_TEMP_VAR", ["UNKNOWN", tempVar]),
+                        IR.Instruction("CREATE_TEMP_VAR", ["UNKNOWN", typeOfStruct]),
                         IR.Instruction("&", [tempVar, inst.argList[1]]),
-                        IR.Instruction("CALL", [typeOfStruct, "decltype", inst.argList[1]]),
+                        IR.Instruction("CALL", [typeOfStruct, "_decltype", inst.argList[1]]),
                         IR.Instruction("+", [RVS, tempVar, f"{typeOfStruct}::{inst.argList[2]}"])
                     ]
                 elif inst.name == "MOV":
@@ -490,17 +553,48 @@ def EvaluateMemoryAddressOfTempVars(instList):
                         IR.Instruction("&", [RVS, inst.argList[1]]),
                     ]
                 elif inst.name == "[]":
-                    tempVar = GetNewTempVarName()
+                    offsetTempVar = GetNewTempVarName()
                     tempVar2 = GetNewTempVarName()
+                    sizeOfTempVar = GetNewTempVarName()
+                    typeTempVar = GetNewTempVarName()
                     writeIntoVar.addressInstList += [
-                        IR.Instruction("CREATE_TEMP_VAR", ["UNKNOWN", tempVar]),
-                        IR.Instruction("*", [tempVar, inst.argList[2], f"VAR_TYPE~{inst.argList[1]}"]),
+                        IR.Instruction("CREATE_TEMP_VAR", ["UNKNOWN", offsetTempVar]),
+                        IR.Instruction("CREATE_TEMP_VAR", ["type", typeTempVar]),
+                        IR.Instruction("CREATE_TEMP_VAR", ["UNKNOWN", sizeOfTempVar]), 
+
+                        IR.Instruction("CALL", [typeTempVar, "_declindtype", inst.argList[1]]),
+                        IR.Instruction("CALL", [sizeOfTempVar, "_sizeof", typeTempVar]),
+                        IR.Instruction("*", [offsetTempVar, inst.argList[2], sizeOfTempVar]),
+
                         IR.Instruction("CREATE_TEMP_VAR", ["UNKNOWN", tempVar2]),
                         IR.Instruction("&", [tempVar2, inst.argList[1]]),
-                        IR.Instruction("+", [RVS, tempVar, tempVar2])
+                        IR.Instruction("+", [RVS, offsetTempVar, tempVar2])
                     ]
         instructionIndex += 1
 
+def ConstPropergation(instList):
+    instCounter = 0
+    scopeList = []
+    while instCounter < len(instList):
+        inst = instList[instCounter]
+        if inst.name == "OPENSCOPE":
+            scopeList.append([])
+            if firstOpenScope:
+                scopeList[-1] += inbuiltFunctionList
+            firstOpenScope = False
+        elif inst.name == "CLOSESCOPE":
+            scopeList.pop(-1)
+        elif inst.name == "CREATE" or inst.name == "CREATE_ARGUMENT" or inst.name == "CREATE_TEMP_VAR":
+            LogCreatedVariable(inst.argList, scopeList[-1])
+        elif inst.name == "CREATE_FUNCTION" and firstOpenScope == False:
+            LogCreatedFunction(inst.argList, scopeList)
+        elif inst.name == "CREATE_STRUCT":
+            LogStructure(inst.argList, scopeList)
+        
+        elif inst.name == "MOV":
+            writeIntoVar = GetVaraibleFromScopeList(inst.argList[0], scopeList)
+
+        instCounter += 1
 def PerformOperations(program):
     instList = IRToDataStructures.ToInstructionList(program)    
     BreakDownStructs(instList)
@@ -509,6 +603,7 @@ def PerformOperations(program):
     #RemoveVar_Type(instList)
     #RemoveUnknownVarType(instList)
     EvaluateDataTypes(instList)
+    #ConstPropergation(instList)
     return InstListToProgram(instList)   
     
 

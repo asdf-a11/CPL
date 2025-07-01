@@ -1,3 +1,4 @@
+import Types
 class Scope():
     def __init__(self, something):
         pass
@@ -16,6 +17,8 @@ class Converter():
     ##############
     def Mov(self, instList, instIdx, argList):
         code = ""
+        if argList[1] in [i.name for i in Types.typeList]:
+            return ""
         code += self.tabs + argList[0] + " = " + argList[1] + ";\n"
         return code
     def Ldr(self, instList, instIdx, argList):
@@ -30,6 +33,9 @@ class Converter():
             if i == "$":
                 ptrCounter += 1
         t = "CPLPtr<" * ptrCounter + t.replace("$", "") + ">" * ptrCounter
+        if len(argList) == 3:
+            code += f"{self.tabs}CPL_LIST<{t}> {argList[1]}({argList[2]});\n"
+            return code
         code += self.tabs + t + " " + argList[1] + ";\n"
         return code
     def CreateList(self, instList, instIdx, argList):
@@ -220,6 +226,7 @@ class Converter():
 #define UNKNOWN int
 #define byte unsigned char
 #define ui8 byte
+#define type char
 
 #define VARTYPE sizeof(int)
 

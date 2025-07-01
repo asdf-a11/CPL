@@ -110,7 +110,7 @@ def IsTypeDef(idx, instList, tokenList):
             namePos += 1
         if il(tokenList,namePos,errMsg).tokenType == "NAME":
             if isList:
-                instList.append(IR.Instruction("CREATELIST",[
+                instList.append(IR.Instruction("CREATE",[
                     tokenList[idx].tokenSubset + "$" * isPtr,
                     tokenList[namePos].tokenSubset,
                     sizeVarName
