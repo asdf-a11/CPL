@@ -4,7 +4,7 @@ ui8[MAP_SY][MAP_SX] map = [
 	[1,1,1,1,1],
 	[1,0,0,0,1],
 	[1,0,0,0,1],
-	[1,0,0,0,1],
+	[1,0,1,0,1],
 	[1,1,1,1,1]
 ];
 
@@ -44,16 +44,16 @@ fn void drawRect(i32 xPos, i32 yPos, i32 sx, i32 sy){
 		while y < sy{
 			i32 screenPos = ((xPos + x) * SCREEN_X + (yPos + y)) * 3;
 			if screenPos < SCREEN_X * SCREEN_Y * 3 - 3 or screenPos < 0{
-				$(screenBuffer + screenPos) = 255;
-				$(screenBuffer + screenPos + 1) = 0;
-				$(screenBuffer + screenPos + 2) = 30;
+				$(screenBuffer + screenPos) = 85/2;
+				$(screenBuffer + screenPos + 1) = 62/2;
+				$(screenBuffer + screenPos + 2) = 67/2;
 			}
 			y = y + 1;
 		}
 		x = x + 1;
 	}
 }
-fn void drawLine(i32 xPos, i32 ySize){
+fn void drawLine(i32 xPos, i32 ySize, f32 depth){
 	i32 y = 0;
 	if xPos < 0 or xPos > SCREEN_X{
 
@@ -66,9 +66,9 @@ fn void drawLine(i32 xPos, i32 ySize){
 			}
 			else{
 				i32 screenPos = ((xPos * SCREEN_X) + y) * 3;
-				$(screenBuffer + screenPos + 1) = 255;
-				$(screenBuffer + screenPos + 2) = 255;
-				$(screenBuffer + screenPos + 3) = 255;
+				$(screenBuffer + screenPos + 1) = 53 / depth;
+				$(screenBuffer + screenPos + 2) = 62 / depth;
+				$(screenBuffer + screenPos + 3) = 67 / depth;
 			}
 			y = y + 1;
 		}
@@ -77,7 +77,11 @@ fn void drawLine(i32 xPos, i32 ySize){
 fn void clearScreen(){
 	i32 counter = 0;
 	while counter < SCREEN_X * SCREEN_Y * 3{
-		$(screenBuffer + counter) = 0;
+		$(screenBuffer + counter) = 135;
+		counter = counter + 1;
+		$(screenBuffer + counter) = 206;
+		counter = counter + 1;
+		$(screenBuffer + counter) = 235;
 		counter = counter + 1;
 	}
 }
@@ -86,7 +90,7 @@ fn void println(){
 	printc(13);
 }
 fn f32 getDepth(f32 fovCounter){
-	f32 STEP_SIZE = 0.1;
+	f32 STEP_SIZE = 0.01;
 	f32 value = arctan(fovCounter);
 	f32 theta = playerRot;
 	f32 x = cos(theta) * value + sin(theta);
@@ -122,7 +126,7 @@ while 1{
 	i32 xCounter = 0;
 	while fovCounter < FOV / 2.0{
 		f32 depth = getDepth(fovCounter);
-		drawLine(xCounter,0.5 / depth * SCREEN_Y);
+		drawLine(xCounter,0.5 / depth * SCREEN_Y, depth);
 		xCounter = xCounter + 1;
 		fovCounter = fovCounter + fovStepSize;
 	}
@@ -131,6 +135,7 @@ while 1{
 	drawScreenBuffer();
 	graphicssleep(500);
 	clearScreen();
+	drawRect(0, SCREEN_Y / 2, SCREEN_X, SCREEN_Y /2);
 	printn(9); println();
 }
 
