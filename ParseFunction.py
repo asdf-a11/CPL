@@ -96,6 +96,35 @@ def IsTypeDef(idx, instList, tokenList):
     tt = il(tokenList,idx,errMsg).tokenType 
     if tt == "TYPE" or tt == "NAME":
         namePos = idx + 1
+
+        typeModifiers = []
+        while 1:
+            if il(tokenList, namePos, errMsg).tokenType == "NAME":
+                break
+            if tokenList[namePos].tokenSubset == "$":
+                typeModifiers.append("$")
+                namePos += 1
+            elif tokenList[namePos].tokenType == "[":
+                newInstructions, newIdx, sizeVarName = EvalSquareBrackets(tokenList, namePos+1)
+                instList += newInstructions
+                namePos = newIdx + 1 
+                typeModifiers.append(f"[{sizeVarName}]")
+            else:
+                #raise Exception("Invalid token")
+                return False, 1
+        instList.append(IR.Instruction("CREATE",[
+            tokenList[idx].tokenSubset + "".join(typeModifiers),
+            tokenList[namePos].tokenSubset,
+        ]))
+        hap,newIdx = IsEqu(namePos, instList, tokenList)
+        if hap == False:                    
+            if tokenList[namePos+1].tokenType != ";":
+                raise Exception("No semi colon after varaible def")
+            return True, namePos + 2
+        else:
+            #TODO check for semi colon
+            return True, newIdx
+        '''
         isList = False
         isPtr = False
         if il(tokenList, idx+1, errMsg).tokenType == "[":
@@ -127,6 +156,7 @@ def IsTypeDef(idx, instList, tokenList):
                 return True, namePos + 2
             else:
                 return True, newIdx
+        '''
     return False, 1
 def IsRepeat(idx, instList, tokenList):
     global labelCounter
@@ -297,6 +327,19 @@ def IsCreateStruct(idx, instList, tokenList):
         #instList.append(IR.Instruction("CREATE_STRUCT", [listName, expName, expName2])) 
         return True, newIdx
     return False, 0
+def IsReturn(idx, instList, tokenList):
+    errMsg = "Ran out of toekns"
+    if tokenList[idx].tokenType == "RETURN":
+        expName = CreateNewTempVar(instList)
+        if idx+1 < len(tokenList) and tokenList[idx+1].tokenType == ";":
+            instList.append(IR.Instruction("RETURN", []))
+            newIdx = idx + 1
+        else:
+            newIrList, newIdx = ParseExpression.ExpToIasm(tokenList, idx + 1, expName, escChar=";")
+            instList += newIrList
+            instList.append(IR.Instruction("RETURN", [expName]))
+        return True, newIdx + 1
+    return False, 0
 
         
 
@@ -315,7 +358,8 @@ functionList = [
     IsRepeat,
     IsVoidFunctionCall,
     IsCreateFunction,
-    IsCreateStruct
+    IsCreateStruct,
+    IsReturn
 ]
 
 def GenerateIR(tokenList):

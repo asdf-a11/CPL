@@ -1,31 +1,25 @@
+i32 MAP_SX = 5;
+i32 MAP_SY = 5;
+ui8[MAP_SY][MAP_SX] map = [
+	[1,1,1,1,1],
+	[1,0,0,0,1],
+	[1,0,0,0,1],
+	[1,0,0,0,1],
+	[1,1,1,1,1]
+];
+
 i32 SCREEN_X = 600;
 i32 SCREEN_Y = 600;
-i32 PLAYER_SIZE_X = 20;
-i32 PLAYER_SIZE_Y = 20;
-
-graphicsinit(SCREEN_X, SCREEN_Y);
-
-i32 playerPosX = SCREEN_X / 2;
-i32 playerPosY = SCREEN_Y - PLAYER_SIZE_Y - 5;
-i32 playerSpeed = 30;
 
 ui8$ screenBuffer = shalloc(SCREEN_X * SCREEN_Y * 3);
 
-i32 enemySpeed = 20;
-i32 enemyCount = 10;
-i32[enemyCount] enemyXList;
-i32[enemyCount] enemyYList;
-i32 enemySizeX = 20;
-i32 enemySizeY = 20;
+f32 playerX = 2.0;
+f32 playerY = 2.0;
+f32 playerRot = 0.5;
 
-fn void initEnemies(){
-	i32 counter = 0;
-	while counter < enemyCount{
-		enemyXList[counter] = counter * 30 + 10;
-		enemyYList[counter] = counter * 10;
-		counter = counter + 1;
-	}
-}
+
+
+
 fn void drawScreenBuffer(){
 	i32 x = 0;
 	i32 counter = 0;
@@ -59,14 +53,25 @@ fn void drawRect(i32 xPos, i32 yPos, i32 sx, i32 sy){
 		x = x + 1;
 	}
 }
-fn void drawPlayer(){
-	drawRect(playerPosX, playerPosY, PLAYER_SIZE_Y, PLAYER_SIZE_X);
-}
-fn void drawEnemies(){
-	i32 counter = 0;
-	while counter < enemyCount{
-		drawRect(enemyXList[counter], enemyYList[counter], enemySizeX, enemySizeY);
-		counter = counter + 1;
+fn void drawLine(i32 xPos, i32 ySize){
+	i32 y = 0;
+	if xPos < 0 or xPos > SCREEN_X{
+
+	}
+	else{
+		i32 y = SCREEN_Y / 2 - ySize / 2;
+		while y < SCREEN_Y / 2 + ySize / 2{
+			if y < 0 or y > SCREEN_Y - 1{
+
+			}
+			else{
+				i32 screenPos = ((xPos * SCREEN_X) + y) * 3;
+				$(screenBuffer + screenPos + 1) = 255;
+				$(screenBuffer + screenPos + 2) = 255;
+				$(screenBuffer + screenPos + 3) = 255;
+			}
+			y = y + 1;
+		}
 	}
 }
 fn void clearScreen(){
@@ -76,45 +81,60 @@ fn void clearScreen(){
 		counter = counter + 1;
 	}
 }
-fn void updateEnemies(){
-	i32 counter = 0;
-	while counter < enemyCount{
-		enemyYList[counter] = enemyYList[counter] + enemySpeed;
-		if enemyYList[counter] > 600{
-			enemyYList[counter] = 0;
-		}
-		counter = counter + 1;
-	}
-}
-fn void updatePlayer(){
-	if(getkeypress('a') == 1){
-		playerPosX = playerPosX - playerSpeed;
-	}
-	if(getkeypress('d') == 1){
-		playerPosX = playerPosX + playerSpeed;
-	}
-}
 fn void println(){
 	printc(10);
 	printc(13);
 }
-
-
-initEnemies();
-
-while 1{
-	graphicspump();
-	updatePlayer();
-	updateEnemies();
-	drawPlayer();
-	drawEnemies();
-	drawScreenBuffer();
-	graphicssleep(500);
-	clearScreen();
+fn f32 getDepth(f32 fovCounter){
+	f32 STEP_SIZE = 0.1;
+	f32 value = arctan(fovCounter);
+	f32 theta = playerRot;
+	f32 x = cos(theta) * value + sin(theta);
+	f32 y = -sin(theta) * value + cos(theta);
+	i32 MAX_STEPS = 7.0 / STEP_SIZE;
+	i32 stepCounter = 0;
+	f32 rayXPos = playerX;
+	f32 rayYPos = playerY;
+	while stepCounter < MAX_STEPS{
+		rayXPos = rayXPos + x * STEP_SIZE;
+		rayYPos = rayYPos + y * STEP_SIZE;
+		i32 a = rayXPos;
+		i32 b = rayYPos;
+		ui8 v = map[a][b];
+		if v == 1{
+			return STEP_SIZE * stepCounter;
+		}
+		stepCounter = stepCounter + 1;
+	}
+	return -1.0;
 }
 
 
-while 1{}
+graphicsinit(SCREEN_X, SCREEN_Y);
+
+while 1{
+	graphicspump();
+	
+	f32 FOV = 2.09;
+	f32 fovCounter = -FOV / 2.0;
+	f32 fovStepSize = FOV / SCREEN_X;
+	
+	i32 xCounter = 0;
+	while fovCounter < FOV / 2.0{
+		f32 depth = getDepth(fovCounter);
+		drawLine(xCounter,0.5 / depth * SCREEN_Y);
+		xCounter = xCounter + 1;
+		fovCounter = fovCounter + fovStepSize;
+	}
+	playerRot = playerRot + 0.1;
+
+	drawScreenBuffer();
+	graphicssleep(500);
+	clearScreen();
+	printn(9); println();
+}
+
+
 
 
 

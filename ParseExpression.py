@@ -118,21 +118,22 @@ class Exp():
             newExpTokenList = []
             listExpList = []
             while True:
+                if position >= len(self.expTokens):
+                    raise Exception("Unclosed list in expression")
                 if self.expTokens[position].tokenType in list("(["):
                     insideCounter += 1
-                elif self.expTokens[position].tokenType in list("])"):
+                if self.expTokens[position].tokenType in [",","]"] and insideCounter == 0:
+                    exp = Exp()
+                    exp.expTokens = newExpTokenList.copy()
+                    newExpTokenList = []
+                    listExpList.append(exp)
+                    #position += 1
+                else:
+                    newExpTokenList.append(self.expTokens[position])
+                if self.expTokens[position].tokenType in list("])"):
                     insideCounter -= 1
                     if insideCounter == -1: 
                         break
-                elif self.expTokens[position].tokenType == ",":
-                    if insideCounter == 0: 
-                        exp = Exp()
-                        exp.expTokens = newExpTokenList.copy()
-                        newExpTokenList = []
-                        listExpList.append(exp)
-                        position += 1
-                        continue
-                newExpTokenList.append(self.expTokens[position])
                 position += 1
             varList = []
             for exp in listExpList:
@@ -154,7 +155,22 @@ class Exp():
             self.expTokens.insert(tdx,listNameToken)
             tdx += 1
             return tdx
+        def ReplaceSingleAritySubtractOperator():
+            tdx = 0
+            while tdx < len(self.expTokens):
+                currentToken = self.expTokens[tdx]
+                if type(currentToken) == Lexer.Token:
+                    if currentToken.tokenType == "OPERATOR" and currentToken.tokenSubset == "-":
+                        if tdx == 0:
+                            self.expTokens.insert(0, Lexer.Token("0","CONST"))
+                            tdx += 1
+                        else:
+                            self.expTokens.insert(tdx, Lexer.Token("0","CONST"))
+                            self.expTokens.insert(tdx, Lexer.Token("+","OPERATOR"))
+                            tdx += 2
+                tdx += 1
         #
+        ReplaceSingleAritySubtractOperator()
         while tdx < len(self.expTokens):
             if type(self.expTokens[tdx]) == Lexer.Token:
                 if self.expTokens[tdx].tokenType == "NAME":
@@ -176,6 +192,8 @@ class Exp():
                     tdx = 0            
                     continue
                 #Handle - as a single arity operator
+
+                '''
                 if self.expTokens[tdx].tokenType == "OPERATOR":
                     if len(self.expTokens) > tdx+2:
                         if type(self.expTokens[tdx+1]) == Lexer.Token:
@@ -184,7 +202,7 @@ class Exp():
                                 e.expTokens = self.expTokens[tdx+1:tdx+3].copy()
                                 self.expTokens[tdx+1] = e
                                 self.expTokens.pop(tdx+2)
-
+                '''
                 if self.expTokens[tdx].tokenType == "[":
                     tdx = ReplaceListWithVaraible(irList, tdx)
             tdx += 1        

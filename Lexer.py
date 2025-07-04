@@ -6,17 +6,17 @@ import copy
 Operators.Init()
 Types.Init()
 
-specialCharacters = list(";:[]{}()~,#<>=/+-.*!$%^&~¬?¬|\n\t \'")
-specialCharactersTokens = list(";:[]{}()~,.?=¬|")
+specialCharacters = list(";:[]{}()~,#<>=/+-.*!$%^&~¬?¬|\n\t \'\"\\")
+specialCharactersTokens = specialCharacters.copy()#list(";:[]{}()~,.?=¬|")
 
 keyWordList = [
     "fn", "return", "if", "else", "while", "struct"
 ]
 
 class Token():
-    def __init__(self, typ="NONE", subset="NONE"):
-        self.tokenType = subset
-        self.tokenSubset = typ
+    def __init__(self, subset="NONE", typ="NONE"):
+        self.tokenType = typ
+        self.tokenSubset = subset
         #self.tokenContent = "NONE"
         self.tokenContent = self.tokenSubset
         self.newLine = 0
@@ -129,10 +129,10 @@ def GenerateTokenFromBase10Number(idx, splitList, tokenList):
     if word.isdigit():
         t = Token()
         t.tokenType = "CONST"
-        if "." in word:
-            t.tokenSubset = float(word)
-        else:
-            t.tokenSubset = int(word)
+        #if "." in word:
+        #    t.tokenSubset = float(word)
+        #else:
+        t.tokenSubset = word
         t.tokenContent = word
         tokenList.append(t)
         return True
@@ -201,10 +201,10 @@ def GenerateTokenFromSpecialChar(idx, splitList, tokenList):
 def ReformConstFloats(tokenList):
     idx = 1
     while idx < len(tokenList)-1:
-        if tokenList[idx].tokenType == ".":
+        if tokenList[idx].tokenSubset == ".":
             if tokenList[idx-1].tokenType == "CONST":
                 if tokenList[idx+1].tokenType == "CONST":
-                    reformedString = float(str(tokenList[idx-1].tokenSubset) + "." + str(tokenList[idx+1].tokenSubset))
+                    reformedString = str(float(tokenList[idx-1].tokenSubset + "." + tokenList[idx+1].tokenSubset))
                     tokenList.pop(idx-1); tokenList.pop(idx-1)
                     newToken = Token()
                     newToken.tokenType = "CONST"
@@ -212,6 +212,13 @@ def ReformConstFloats(tokenList):
                     newToken.tokenSubset = reformedString
                     tokenList[idx-1] = newToken
         idx += 1
+def ConstValuesFromStringToValue(tokenList):
+    for idx, i in enumerate(tokenList):
+        if i.tokenType == "CONST":
+            if "." in i.tokenSubset:
+                tokenList[idx].tokenSubset = float(i.tokenSubset)
+            else:
+                tokenList[idx].tokenSubset = int(i.tokenSubset)
 def GenerateTokenFromConstChar(idx, splitList, tokenList):
     if splitList[idx] == "'":
         charString = ""
@@ -237,11 +244,26 @@ def GenerateTokenFromConstChar(idx, splitList, tokenList):
         tokenList.append(t)
         return 1 + len(charString) + 1  # +1 for the closing ' and opening '
     return 0
-
+def GenerateTokenFromString(counter, splitList, tokenList):
+    if splitList[counter] == "\"":
+        string = ""
+        while 1:
+            counter += 1
+            if counter >= len(splitList):
+                raise Exception("Unclosed string")
+            if splitList[counter] == "\"":
+                #if not special character then escape
+                if splitList[counter-1] != "\\":
+                    break
+            string += splitList[counter]
+        tokenList.append(Token(string,"STRING"))
+        return counter + 1#step over closing "
+    return counter
 def GenerateTokenList(splitList):
     tokenList = []
     counter = 0
-    while counter < len(splitList):
+    while counter < len(splitList):        
+        counter = GenerateTokenFromString(counter, splitList, tokenList)
         if GenerateTokenFromKeyword(counter,splitList,tokenList):
             counter += 1; continue
         opSize = GenerateTokenFromOperator(counter,splitList,tokenList)
@@ -274,6 +296,7 @@ def GenerateTokenList(splitList):
         tokenList.append(t)
         counter += 1 
     ReformConstFloats(tokenList)
+    ConstValuesFromStringToValue(tokenList)
     return tokenList  
 def RemoveWhiteSpace(tokenList):
     newTokenList = []
@@ -373,3 +396,29 @@ def PrintTokenList(tokenList):
             s = "nts"[list("\n\t ").index(s)]
         print((" " * t.whiteSpace) + t.tokenType+":"+str(s), end=", ")
     print("")
+def ConcaternateStrings(tokenList):
+    idx = 0
+    while idx < len(tokenList)-1:
+        if tokenList[idx].tokenType == "STRING":
+            if tokenList[idx+1].tokenType == "STRING":
+                tokenList[idx].tokenSubset += tokenList[idx+1].tokenSubset
+                tokenList.pop(idx+1)
+                continue
+        idx += 1
+    return tokenList
+#Needs white space to be removed from tokenList before it is called
+def StringsToLists(tokenList):
+    idx = 0
+    while idx < len(tokenList):
+        if tokenList[idx].tokenType == "STRING":
+            string = copy.deepcopy(tokenList[idx].tokenSubset)
+            tokenList.pop(idx)
+            #Insert tokens in reversed order so they have correct order
+            tokenList.insert(idx, Token(None, "]"))
+            for cdx,c in enumerate(reversed(string)):
+                tokenList.insert(idx,Token(str(ord(c)), "CONST"))
+                if cdx != len(string)-1:
+                    tokenList.insert(idx,Token(None, ","))
+            tokenList.insert(idx, Token(None, "["))
+        idx += 1
+    return tokenList

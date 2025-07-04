@@ -107,8 +107,15 @@ def PerformPass(splitList):
     directiveFunctionList = [
         IsMacroDef, IsMultiLineComment
     ]
+    inString = False
     while counter < len(splitList) - 1:
-        if splitList[counter] == "#":
+        if splitList[counter] == "\"":
+            inString = not inString
+            if counter > 0:
+                if splitList[counter-1] == "\\":
+                    inString = not inString
+
+        if splitList[counter] == "#" and not inString:
             validInstruction = False
             for function in directiveFunctionList:
                 hap, newCounter = function(splitList, counter+1)
@@ -126,7 +133,6 @@ def PerformPass(splitList):
     if splitList[-1] == "#":
         raise Exception("Code cannot end with unclosed #")
     return anythingHappend
-
 
 def PreProcess(code):
     #Handle one line comments

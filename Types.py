@@ -11,6 +11,7 @@ class Type():
         self.style = style
         self.sizeInBytes = sizeInBytes
         self.isPtr = 0
+        self.numberOfElements = 1
     def __str__(self):
         return self.name
 

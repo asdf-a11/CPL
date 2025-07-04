@@ -19,7 +19,13 @@ inbuiltFunctionList = [
     Function.Function("_shalloc", ["i32"], ["i32"], ["ticks"]),
     Function.Function("_printn", ["void"], ["i32"], ["number"]),
     Function.Function("_printc", ["void"], ["i32"], ["character"]),
+    Function.Function("_printf", ["void"], ["f32"], ["value"]),
     Function.Function("_graphicspump", ["void"], [], []),
+    Function.Function("_sin", ["f32"], ["f32"], ["theta"]),
+    Function.Function("_cos", ["f32"], ["f32"], ["theta"]),
+    Function.Function("_tan", ["f32"], ["f32"], ["theta"]),
+    Function.Function("_arctan", ["f32"], ["f32"], ["value"]),
+    Function.Function("_sqrt", ["f32"], ["f32"], ["value"]),
 ]
 
 variableNameCounter = 0
@@ -30,13 +36,18 @@ def GetNewTempVarName():
     return out
 
 
-
+class DataType():
+    def __init__(self, baseType, typeModifiers):
+        self.baseType = baseType
+        self.typeModifiers = typeModifiers
+    def fromString(self, string):
+        pass
 class Variable():
-    def __init__(self, dataType,  name, listSize):
+    def __init__(self, dataType,  name):#, listSize
         self.name = name
         self.dataType = dataType
-        self.listSize = listSize
-        self.hardSetType = False if self.dataType.name == "UNKNOWN" else True
+        #self.listSize = listSize
+        self.hardSetType = False if self.dataType.baseType.name == "UNKNOWN" else True
         #If value for Type is known then it is stored here
         self.typeValue = None
         pass
@@ -88,24 +99,39 @@ def GenerateScopes(instList):
         if i.name == "CREATE":
             pass
 def GetDataTypeByName(string):
-    dt = Types.GetTypeByName(string)
+    name = ""
+    for i in string:
+        if i in ["$", "[", "]"]:
+            break
+        name += i
+    dt = Types.GetTypeByName(name)
+    r = DataType(dt, [])
     if dt == False:
-        return Types.Type(
+        r.baseType = Types.Type(
             name=string,
             style="struct",
             sizeInBytes=-1
         )
-    return dt
+    i = len(name)
+    while i < len(string):
+        if string[i] == "$":
+            r.typeModifiers.append("$")
+        if string[i] == "[":
+            i += 1
+            s = "["
+            while string[i] != "]":
+                s += string[i]
+                i += 1
+            s += "]"
+            r.typeModifiers.append(s)
+        i += 1
+    return r
 def LogCreatedVariable(argList, currentScope):
     dataType = GetDataTypeByName(argList[0])
     varName = argList[1]
-    if len(argList) == 2:
-        listSize = 1
-    else:
-        listSize = None
-        #listSize = int(argList[2])    
-    #currentScope.AddVariable(dataType, varName, listSize)
-    currentScope.append(Variable(dataType, varName, listSize))
+    #if len(argList) == 3:
+    #    dataType.numberOfElements = argList[2]
+    currentScope.append(Variable(dataType, varName))
 def GetVaraibleFromScopeList(name, scopeList):
     for i in reversed(scopeList):
         for v in i:
@@ -117,25 +143,37 @@ def IsDataType(argument):
         if i.name == argument:
             return i
     return False
-def GetArgumentType(argument, scopeList):
+def GetArgumentType(argument, scopeList) -> DataType:
+    r = DataType(None, [])
     if IsConstant(argument):
         if "." in argument:
-            return Types.f32Type
-        return Types.i32Type    
+            r.baseType = copy.deepcopy(Types.f32Type)
+            return r
+        r.baseType = copy.deepcopy(Types.i32Type)    
+        return r
     t = IsDataType(argument)
     if t != False:
-        return t
+        r.baseType = copy.deepcopy(t)
+        return r
     var = GetVaraibleFromScopeList(argument, scopeList)
-    return var.dataType
+    return copy.deepcopy(var.dataType)
 def EvaluateDataTypesFromTypeList(typeList:list) -> Types.Type:
     #float allways win
     #ptr win next
     #Then bigger wins
+    #signed beet unsigned
+    #list beat non list ?
+    #return copy.deepcopy(typeList[0])
     floatSizeList = []
     for t in typeList:
-        floatSizeList.append(-1 if t.style != "float" else t.sizeInBytes)
+        if len(t.typeModifiers) == 0:
+            if t.baseType.style == "float":
+                floatSizeList.append(t.baseType.sizeInBytes)
+                continue
+        floatSizeList.append(-1)
     largestFloat = argMax(floatSizeList)
     if max(floatSizeList) == -1:
+        return copy.deepcopy(typeList[0])
         #Look for ptr
         for t in typeList:
             if t.isPtr != 0:
@@ -159,57 +197,23 @@ def UpdateVarTypeFromArithmetic(argList, scopeList):
     else:
         type2 = None
     if writeIntoVar.hardSetType == False:
-
-        writeIntoVar.dataType = EvaluateDataTypesFromTypeList([type1, type2])
-
-
-        '''
-        isStyleFloat = writeIntoVar.dataType.style == "float"
-        isStyleFloat = isStyleFloat or type1.style == "float"
-        if type2 != None:
-            isStyleFloat = isStyleFloat or type2.style == "float"
-
-        isUnsigned = writeIntoVar.dataType.style == "unsigned"
-        isUnsigned = isUnsigned and type1.style == "unsigned"
-        if type2 != None:
-            isUnsigned = isUnsigned and type2.style == "unsigned"
-
-        isPtr = type1.isPtr
-        if type2 != None:
-            isPtr = isPtr or type2.isPtr
-
-        if isStyleFloat: style = "float"
-        else:
-            if isUnsigned: style = "unsigned"
-            else: style = "int"
-
-        writeIntoVatSize = 0 if writeIntoVar.dataType.sizeInBytes == None else writeIntoVar.dataType.sizeInBytes
-
-        if type2 != None:
-            maxSize = max(type1.sizeInBytes, type2.sizeInBytes)
-        else:
-            maxSize = type1.sizeInBytes
-        maxSize = max(maxSize, writeIntoVatSize)
-
-        writeIntoVar.dataType = Types.GetTypeByStyleAndSize(style, maxSize)
-        writeIntoVar.dataType.isPtr = isPtr
-        '''
-        SetVariable(writeIntoVar.name, writeIntoVar.dataType, scopeList)   
+        writeIntoVar.dataType = EvaluateDataTypesFromTypeList([type1, type2]) 
 def UpdateVarTypeFromMov(argList, scopeList):
     writeIntoVar = GetVaraibleFromScopeList(argList[0], scopeList)
     typ = GetArgumentType(argList[1], scopeList)
     #If it is allready hardset then it shouldnt change else it needs to be evaluated
     if writeIntoVar.hardSetType == False:
         #Following the rules of update to float, to bigger or if is currently UNKNOWN
-        condition = writeIntoVar.dataType.name == "UNKNOWN"
-        condition = condition or (writeIntoVar.dataType.style == "int" and typ.style == "float")
-        condition = condition or (writeIntoVar.dataType.style == typ.style and typ.sizeInBytes > writeIntoVar.dataType.sizeInBytes)
-        if condition:
-            writeIntoVar.dataType = typ
-            SetVariable(writeIntoVar.name, writeIntoVar.dataType, scopeList)   
-    if writeIntoVar.dataType.name == Types.typeType.name:
+        #condition = writeIntoVar.dataType.baseType.name == "UNKNOWN"
+        #condition = condition or (writeIntoVar.dataType.baseType.style == "int" and typ.baseType.style == "float")
+        #condition = condition or (writeIntoVar.dataType.baseType.style == typ.baseType.style and typ.baseType.sizeInBytes > writeIntoVar.dataType.baseType.sizeInBytes)
+        #if condition:
+        #    writeIntoVar.dataType = typ
+        #    SetVariable(writeIntoVar.name, writeIntoVar.dataType, scopeList)   
+        writeIntoVar.dataType = EvaluateDataTypesFromTypeList([typ])
+    if writeIntoVar.dataType.baseType.name == Types.typeType.name:
         writeIntoVar.typeValue = copy.deepcopy(typ)
-        SetVariable(writeIntoVar.name, writeIntoVar.dataType, scopeList) 
+        #SetVariable(writeIntoVar.name, writeIntoVar.dataType, scopeList) 
 def BackTrackAndSetTypes(idx, instList, scopeList):
     openScopeCounter = 0
     while 1:
@@ -226,7 +230,12 @@ def BackTrackAndSetTypes(idx, instList, scopeList):
         c = c or instList[idx].name == "CREATE_TEMP_VAR"
         if c:
             var = GetVaraibleFromScopeList(instList[idx].argList[1], scopeList)
-            instList[idx].argList[0] = var.dataType.name + "$" * var.dataType.isPtr
+
+            instList[idx].argList[0] = var.dataType.baseType.name + "".join(var.dataType.typeModifiers)
+            #instList[idx].argList[0] = var.dataType.name + "$" * var.dataType.isPtr
+            #if len(instList[idx].argList) == 2:
+            #    instList[idx].argList.append(None)
+            #instList[idx].argList[-1] = var.dataType.numberOfElements
         idx += 1
 def InstListToProgram(instList):
     out = ""
@@ -249,14 +258,14 @@ def UpdateVarTypeFromDot(argList, scopeList):
         structVar = GetVaraibleFromScopeList(argList[1], scopeList)
         typ = GetVarTypeFromStruct(structName=structVar.dataType.name, attribName=argList[2], scopeList=scopeList)
         writeIntoVar.dataType = copy.deepcopy(typ)
-        SetVariable(writeIntoVar.name, writeIntoVar.dataType, scopeList)  
+        #SetVariable(writeIntoVar.name, writeIntoVar.dataType, scopeList)  
 def UpdateVarTypeFromGetAddress(argList, scopeList):
     writeIntoVar = GetVaraibleFromScopeList(argList[0], scopeList)
     if writeIntoVar.hardSetType == False:
         typ = GetArgumentType(argList[1], scopeList)
         writeIntoVar.dataType = copy.deepcopy(typ)
-        writeIntoVar.dataType.isPtr += 1
-        SetVariable(writeIntoVar.name, writeIntoVar.dataType, scopeList)  
+        writeIntoVar.dataType.typeModifiers.append("$")
+        #SetVariable(writeIntoVar.name, writeIntoVar.dataType, scopeList)  
 def GetVarTypeFromStruct(structName, attribName, scopeList):
     struct = None
     for scope in reversed(scopeList):
@@ -281,8 +290,11 @@ def UpdateVarTypeFromDref(argList, scopeList):
     if writeIntoVar.hardSetType == False:
         typ = GetArgumentType(argList[1], scopeList)
         writeIntoVar.dataType = copy.deepcopy(typ)
-        writeIntoVar.dataType.isPtr = 0
-        SetVariable(writeIntoVar.name, writeIntoVar.dataType, scopeList)
+        #writeIntoVar.dataType.isPtr = 0
+        if writeIntoVar.dataType.typeModifiers[-1] != "$":
+            raise Exception("Dereferencing a non pointer variable")
+        writeIntoVar.dataType.typeModifiers.pop(-1)
+        #SetVariable(writeIntoVar.name, writeIntoVar.dataType, scopeList)
 def UpdateVarTypeFromCall(instRef, scopeList):
     argList = instRef.argList
     writeIntoVar = GetVaraibleFromScopeList(argList[0], scopeList)
@@ -295,14 +307,16 @@ def UpdateVarTypeFromCall(instRef, scopeList):
                         #TODO handle multiple returns probably by generating a struct
                         #Perhaps do this when creating the function unless struct is allready
                         #created for that combination of data types
-                        writeIntoVar.dataType = Types.GetTypeByName(i.returnTypeList[0])
-                        SetVariable(writeIntoVar.name, writeIntoVar.dataType, scopeList)
-                        if writeIntoVar.dataType.name == "void":
+                        #TODO need to be able to return list from function
+                        writeIntoVar.dataType = GetDataTypeByName(i.returnTypeList[0])
+                        #SetVariable(writeIntoVar.name, writeIntoVar.dataType, scopeList)
+                        if writeIntoVar.dataType.baseType.name == "void":
                             instRef.argList[0] = "void"
                         return
         #else assume it is a int
-        writeIntoVar.dataType = copy.deepcopy(Types.i32Type)
-        SetVariable(writeIntoVar.name, writeIntoVar.dataType, scopeList)
+        writeIntoVar.dataType.baseType = copy.deepcopy(Types.i32Type)
+        writeIntoVar.dataType.typeModifiers = []
+        #SetVariable(writeIntoVar.name, writeIntoVar.dataType, scopeList)
 def LogCreatedFunction(argList, scopeList):
     scopeList[-1].append(
         Function.Function(
@@ -351,7 +365,17 @@ def UpdateVarTypeFromListIndex(argList, scopeList):
     if writeIntoVar.hardSetType == False:
         listVar = GetVaraibleFromScopeList(argList[1], scopeList)
         writeIntoVar.dataType = copy.deepcopy(listVar.dataType)
-        SetVariable(writeIntoVar.name, writeIntoVar.dataType, scopeList)
+        if "[" not in writeIntoVar.dataType.typeModifiers[-1]:
+            raise Exception("Cannot index non list varaible")
+        writeIntoVar.dataType.typeModifiers.pop()
+        #SetVariable(writeIntoVar.name, writeIntoVar.dataType, scopeList)
+def UpdateVarTypeFromSetList(argList, scopeList):
+    writeIntoVar = GetVaraibleFromScopeList(argList[0], scopeList)
+    if writeIntoVar.hardSetType == False:
+        #Just assumes that types are consistant
+        listVar = GetVaraibleFromScopeList(argList[1], scopeList)
+        writeIntoVar.dataType = copy.deepcopy(listVar.dataType)
+        writeIntoVar.dataType.typeModifiers.append(f"[{len(argList)-1}]")
 def EvaluateDataTypes(instList): 
     def RemoveVar_Type(inst, scopeList):
         if len(inst.argList) == 0: return
@@ -373,7 +397,7 @@ def EvaluateDataTypes(instList):
     openScopePositionList = []
     firstOpenScope = True
     for idx,inst in enumerate(instList):   
-        RemoveVar_Type(inst, scopeList)   
+        #RemoveVar_Type(inst, scopeList)   
         
         hap, newInstruction = EvaluateCompileTimeFunction(inst, scopeList)
         if hap:
@@ -412,6 +436,8 @@ def EvaluateDataTypes(instList):
             UpdateVarTypeFromDref(inst.argList, scopeList)
         elif inst.name == "CALL":
             UpdateVarTypeFromCall(inst, scopeList)
+        elif inst.name == "SETLIST":
+            UpdateVarTypeFromSetList(inst.argList, scopeList)
         elif inst.name == "MOV":
             UpdateVarTypeFromMov(inst.argList, scopeList)
         

@@ -22,6 +22,8 @@ def Compile(sourceCode, outputPreProcessedCode=False):
     tokenList = Lexer.RemoveComments(tokenList)
     Lexer.PrintTokenList(tokenList)
     tokenList = Lexer.RemoveWhiteSpace(tokenList)
+    tokenList = Lexer.ConcaternateStrings(tokenList)
+    tokenList = Lexer.StringsToLists(tokenList)
     Lexer.PrintTokenList(tokenList)
     print("Lexing took -> ", time.time() - startLexingTime)
     wholeProgramIR = []

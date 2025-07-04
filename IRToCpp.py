@@ -11,6 +11,7 @@ class Converter():
         self.commentIR = False
         self.functionDefStringList = []
         self.firstFunction = True
+        self.noSemiColonOnCloseScopeList = []
     
     #############
     #convertion functions
@@ -28,15 +29,56 @@ class Converter():
         code = ""
         t = argList[0]
         if t == "void": return ""
-        ptrCounter = 0
+
+        
+        baseTypeName = ""
         for i in t:
+            if i in ["$", "["]:
+                break
+            baseTypeName += i
+        typeModString = t[len(baseTypeName):]
+        typeModifiers = typeModString.replace("$", " $ ").replace("[", " [")
+        typeModifiers = typeModifiers.replace("]", "] ").split()
+
+        outType = baseTypeName
+        for i in typeModifiers:
             if i == "$":
-                ptrCounter += 1
-        t = "CPLPtr<" * ptrCounter + t.replace("$", "") + ">" * ptrCounter
-        if len(argList) == 3:
-            code += f"{self.tabs}CPL_LIST<{t}> {argList[1]}({argList[2]});\n"
-            return code
-        code += self.tabs + t + " " + argList[1] + ";\n"
+                outType = f"CPLPtr<{outType}>"
+            elif i[0] == "[":
+                outType = f"vector<{outType}>"
+
+        code += self.tabs + outType + " " + argList[1] + ";\n"
+
+        #Initialise list size
+        #Only initilise evey dimension after a $
+        s = ""
+        for i in reversed(typeModString):
+            if i == "$":
+                break
+            s += i
+        s = "".join(list(reversed(s))).replace("]","").split("[")
+        s = [i for i in list(reversed(s)) if i != ""]
+        if len(s) > 0:
+            code += f"{self.tabs}{argList[1]}.resize({s[0]});\n"
+            a = ""
+            b = ""
+            tabs = ""
+            counterNameList = []
+            for i in range(1, len(s)):
+                vn = f"l{len(code)+len(a)}"
+                counterNameList.append(vn)
+                b = f"[{vn}]{b}"
+                a += f"\
+{self.tabs+tabs}for(int {vn} = 0;{vn} < {s[i-1]}; {vn}++){"{"}\n\
+{self.tabs+tabs}\t{argList[1]}{b}.resize({s[i]});\n"
+                tabs += "\t"
+            if len(tabs) > 0:
+                a += self.tabs + "}" * len(tabs) + "\n"
+            code += a
+
+
+
+
         return code
     def CreateList(self, instList, instIdx, argList):
         t = argList[0]
@@ -60,11 +102,18 @@ class Converter():
         return ""
     def OpenScope(self, instList, instIdx, argList):
         code = self.tabs + "{\n"
+        if instIdx > 0 and instList[instIdx-1].name in ["IF", "ELSE", "REPEAT"]:
+            self.noSemiColonOnCloseScopeList.append(True)
+        else:
+            self.noSemiColonOnCloseScopeList.append(False)
         self.tabs += "\t"
         return code
     def CloseScope(self, instList, instIdx, argList):
         self.tabs = self.tabs[:len(self.tabs)-1]
         v = ";" if len(self.tabs) != 0 else ""
+        if self.noSemiColonOnCloseScopeList[-1]:
+            v = ""
+        self.noSemiColonOnCloseScopeList.pop()
         return self.tabs + "}"+v+"\n"
     def SingleOperandOperation(self, instList, instIdx, argList):
         code = ""
@@ -151,6 +200,9 @@ class Converter():
     def IndexOperator(self, instList, instIdx, argList):
         code = f"{self.tabs}{argList[0]} = {argList[1]}[{argList[2]}];\n"
         return code
+    def Return(self, instList, instIdx, argList):
+        code = f"{self.tabs}return {",".join(argList)};\n"
+        return code
     ###########
     #stuff
     ###########
@@ -177,6 +229,7 @@ class Converter():
             ["ENDELSE", self.EndIf],
             ["ENDREPEAT", self.EndRepeat],
             ["BREAK", self.Break],
+            ["RETURN", self.Return],
             ["+", self.DoubleOperandOperation],
             ["-", self.DoubleOrSingleOperandOperation],
             ["==", self.DoubleOperandOperation],
@@ -215,9 +268,12 @@ class Converter():
 #include <iostream>
 #include <vector>
 #include <cstddef>
+#include <cmath>
 #include \"../CppFiles/CplCppList.hpp\"
 #include \"../CppFiles/CplPtr.hpp\"
 #include \"../CppFiles/CPLGraphics.hpp\"
+
+using std::vector;
 
 #define i32 int
 #define i16 short
@@ -225,8 +281,11 @@ class Converter():
 #define f32 float
 #define UNKNOWN int
 #define byte unsigned char
-#define ui8 byte
+//#define ui8 byte
+#define ui8 i32
 #define type char
+
+#define arctan std::atan
 
 #define VARTYPE sizeof(int)
 
@@ -244,6 +303,10 @@ CPLPtr<ui8> shalloc(i32 size){
     o.ptr = (char*)new ui8 [size];
     return o;
 }
+using std::cos;
+using std::sin;
+using std::tan;
+using std::sqrt;
 
 """
         return defines
