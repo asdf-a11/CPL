@@ -5,6 +5,11 @@ import copy
 #signed beat unsigned
 
 
+class TypingError(Exception):
+    def __init__(self, message, code=None):
+        super().__init__(message)
+        self.code = code
+
 class Type():
     def __init__(self,  name, style, sizeInBytes):
         self.name = name

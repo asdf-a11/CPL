@@ -43,12 +43,32 @@ def UpdateSettings(settings):
     #if platform == None:
     #    raise Exception("Please specify target platform")
 class DataType():
-    def __init__(self, name, size, style):
-        self.name = name
-        self.size = size
-        self.style = style
+    def __init__(self, baseType, typeModList):
+        self.baseType = baseType
+        self.typeModifiers = typeModList
+        self.isDynamicList = self.IsDynamicList()
+    def IsDynamicList(self):
+        for i in reversed(self.typeModifiers):
+            if i[0] == "[":
+                if Util.IsConstant(i[1:-1]) == False:
+                    return True
+        return False
+    def GetSize(self):
+        numberOfElements = 1
+        isPtr = False
+        for i in reversed(self.typeModifiers):
+            if i[0] == "[":
+                if Util.IsConstant(i[1:-1]):
+                    numberOfElements *= int(i[1:-1])
+                else:
+                    raise Exception("Cant get size of dynamic array")
+            elif i == "$":
+                isPtr = True
+                break
+        baseSize = 4 if isPtr else self.baseType.sizeInBytes
+        return baseSize * numberOfElements
     def AsSizeString(self, sizeOverride=None):
-        size = self.size
+        size = self.GetSize()
         if sizeOverride != None:
             size = sizeOverride
         if size == 4:
@@ -58,19 +78,45 @@ class DataType():
         if size == 1:
             return "byte"
         raise Exception("Invalid size")
+def GetRegisterFromSize(size, regChar="a"):
+    match(size):
+        case 1:
+            return f"{regChar}l"
+        case 2:
+            return f"{regChar}x"
+        case 4:
+            return f"e{regChar}x"
+        case _:
+            raise Exception("Invalid size")
+def GetDataTypeFromString(dataTypeName):
+    baseTypeString = ""
+    for i in dataTypeName:
+        if i in ["$", "["]:
+            break
+        baseTypeString += i
+    baseTypeRef = None
+    for i in Types.typeList:
+        if i.name == baseTypeString:
+            baseTypeRef = i
+            break
+    if baseTypeRef == None:
+        raise Exception("Could not find base type -> " + baseTypeString)
+    typeModifiers = []
+    restOfString = dataTypeName[len(baseTypeString):]
+    i = 0
+    while i < len(restOfString):
+        if restOfString[i] == "$":
+            typeModifiers.append("$")
+        if restOfString[i] == "[":
+            typeModifiers.append("[")
+            while 1:
+                typeModifiers[-1] += restOfString[i]
+                if restOfString[i] == "]":
+                    break
+                i += 1
+        i += 1
+    return DataType(copy.deepcopy(baseTypeRef), typeModifiers)
 
-dataTypeList = [
-    DataType("UNKNOWN", 32//8, None),#TODO
-
-    DataType("f32", 32//8, "float"),
-    DataType("i32", 32//8, "int")
-]
-
-def GetDataTypeFromName(dataTypeName):
-    for i in dataTypeList:
-        if i.name == dataTypeName:
-            return i
-    raise Exception("Failed to find data type name")
 
 class Register():
     def __init__(self, name, size, childList):
@@ -79,30 +125,33 @@ class Register():
         self.childList = childList
         self.inUse = False
 class Variable():
-    def __init__(self, name, dataType, listSize = 1):
+    def __init__(self, name, dataType):
         self.name = name
         self.dataType = dataType
-        self.listSize = listSize
-        self.listSizeBytes = listSize * dataType.size
+        #self.listSize = listSize
+        #self.listSizeBytes = listSize * dataType.size
         self.storedIn = "stack"
         self.scopeTag = None
+        #self.ptrString = ptrString
     def GetPositionInCurrentScope(self,scopeList):
         #counts from ebp
         scopePosition = 0        
         for sdx,s in enumerate(reversed(scopeList)):
             inScopePosition = 0
             searchList = s.variableList
+            #Because looking from the opposite direction aka (looking up the stack not down)
+            #When looking at all prevoise stack frames therefore must be reversed
             if sdx != 0:
                 searchList = reversed(searchList)
             for v in searchList:
                 if sdx != 0:
-                    inScopePosition += v.listSizeBytes
+                    inScopePosition += v.dataType.GetSize()
                 if v == self:
                     if sdx == 0:
                         inScopePosition -= 4
                     return scopePosition + inScopePosition 
                 if sdx == 0:
-                    inScopePosition -= v.listSizeBytes
+                    inScopePosition -= v.dataType.GetSize()
             if sdx != 0:#for the first scope leaving ebp does not include stack frame            
                 scopePosition += 4 if MaxBits == 32 else 8
         raise Exception("Can find self in scope List")
@@ -133,7 +182,10 @@ class Scope():
     def GetSize(self):
         total = 0
         for v in self.variableList:
-            total += v.listSizeBytes
+            if v.dataType.isDynamicList:
+                total += 4
+            else:
+                total += v.dataType.GetSize()
         return total
 class Function():
     def __init__(self, name , returnList, paramTypeList, paramNameList):
@@ -203,10 +255,9 @@ class Converter():
         code += "sub " + stackPointerName + ", "
         code += str(sizeBytes) + "\n"
         return code    
-    def GetVariableByName(self, name):
-        for i in range(len(self.scopeList)):
-            index = -(i+1)
-            for v in self.scopeList[index].variableList:
+    def GetVariableByName(self, name) -> Variable:
+        for scope in reversed(self.scopeList):
+            for v in scope.variableList:
                 if v.name == name:
                     return v
         raise Exception("Failed to find varaible -> " + name)
@@ -297,46 +348,28 @@ class Converter():
         return code
     def Mov(self, instList, instIdx, argList):
         code = ""
-        arg1String = ""
-        arg2String = ""
-        arg2List = False
-        if self.IsVariable(argList[1]):
-            arg2Var = self.GetVariableByName(argList[1])
-            if arg2Var.listSize > 1:
-                code += self.tabs + "mov edi, ebp\n"
-                code += self.tabs + "add edi, " + self.GetVariableMemoryAddressFromBasePtr(argList[1]) + "\n"
-                code += self.tabs + "sub edi, " + self.GetOperandAsString(argList[2]) + "\n"
-                if asmType == "masm": code += self.tabs + "mov edi, dword ptr [edi]\n"
-                else: code += self.tabs + "mov edi, dword[edi]\n"
-                arg2String = "edi"
-                arg2List = True
-            else:
-                code += self.tabs + "mov eax, " + self.GetOperandAsString(argList[1]) + "\n"
-                arg2String = "eax"
+
+        writeIntoVar = self.GetVariableByName(argList[0])        
+        reg = "eax"
+        if self.IsVariable(argList[1]):      
+            var = self.GetVariableByName(argList[1])   
+            argSize = var.dataType.GetSize()  
+            reg = GetRegisterFromSize(argSize)      
+            code += self.tabs + f"mov {reg}, {var.AsString(self.scopeList)}\n"
         else:
-            arg2String = self.GetOperandAsString(argList[1])
-        arg1Var = self.GetVariableByName(argList[0])
-        if arg1Var.listSize > 1:
-            if arg2List:
-                raise Exception("Cannot perform mov instruction when both operands are list")        
-            code += self.tabs + "mov edi, ebp\n"
-            code += self.tabs + "add edi, " + self.GetVariableMemoryAddressFromBasePtr(argList[0]) + "\n"
-            code += self.tabs + "sub edi, " + self.GetOperandAsString(argList[2]) + "\n"
-            arg1String = "dword[edi]"
-        else:
-            arg1String = self.GetOperandAsString(argList[0])
-        code += self.tabs + "mov " + arg1String + ", " + arg2String + "\n"
+            code += self.tabs + f"mov {reg}, {argList[1]}\n"
+        code += self.tabs
+        code += f"mov {writeIntoVar.AsString(self.scopeList)}, {reg}\n"
         return code
     def Create(self, instList, instIdx, argList):
         currentInst = instList[instIdx]
-        dataType = GetDataTypeFromName(currentInst.argList[0])  
-        size = 1
-        if len(argList) >= 3:
-            size = int(argList[2])    
-        variable = Variable(currentInst.argList[1], dataType, size)
+        dataType = GetDataTypeFromString(currentInst.argList[0])
+        variable = Variable(currentInst.argList[1], dataType)
         variable.scopeTag = self.scopeList[-1].tag
         self.scopeList[-1].variableList.append(variable)
-        code = self.AllocStackBytes(variable.listSizeBytes)
+        bytesToAlloc = 4 if variable.dataType.isDynamicList else variable.dataType.GetSize()
+        #code =  f"{self.tabs};{variable.name} ptrString = {ptrString}\n"
+        code = self.AllocStackBytes(bytesToAlloc)
         return code
     def CreateArgument(self, instList, instIdx, argList):
         currentInst = instList[instIdx]
@@ -557,11 +590,27 @@ class Converter():
         return code
     def GetMemoryAddress(self, instList, instIdx, argList):
         code = ""
-        code += self.tabs + "mov eax, ebp\n"
-        code += self.tabs + "add eax, " + self.GetVariableByName(argList[1]).GetMemoryAddressFromBasePtr(self.scopeList) + "\n"
-        code += self.tabs + "mov " + self.GetOperandAsString(argList[0]) + ", eax\n"
+        wi = self.GetVariableByName(argList[0])
+        var = self.GetVariableByName(argList[1])
+        code += f"{self.tabs}lea eax, [{var.GetMemoryAddress(self.scopeList)}]\n"
+        code += self.tabs + f"mov {wi.AsString(self.scopeList)}, eax\n"
         return code
-    
+    def DrefMov(self, instList, instIdx, argList):
+        code = ""
+        wi = self.GetVariableByName(argList[0])
+        if self.IsVariable(argList[1]):
+            v = self.GetVariableByName(argList[1])
+            inst = "movzx" if wi.dataType.GetSize() > v.dataType.GetSize() else "mov"
+            reg = GetRegisterFromSize(wi.dataType.GetSize())
+            code += f"{self.tabs}{inst} {reg}, {v.AsString(self.scopeList)}\n"
+        else:
+            reg = argList[1]
+        
+        ptrReg = GetRegisterFromSize(wi.dataType.GetSize(), "b")
+        code += f"{self.tabs}mov {ptrReg}, {wi.AsString(self.scopeList)}\n"
+
+        code += f"{self.tabs}mov {wi.dataType.AsSizeString()}{ptrReg}, {reg}\n"
+        return code
     
     ###########
     #stuff
@@ -569,7 +618,9 @@ class Converter():
     def GetFunctionForInstruction(self, instName):
         lst = [
             ["MOV", self.Mov],
+            ["DREF_MOV", self.DrefMov],
             ["CREATE", self.Create],
+            ["CREATE_TEMP_VAR", self.Create],
             ["CREATE_ARGUMENT", self.CreateArgument],
             ["REPEAT", self.Repeat],
             ["OPENSCOPE", self.OpenScope],
@@ -634,8 +685,18 @@ class Converter():
         for db in self.dataBlockList:
             code += db.AsString()
         return code
+    def ExpandListOperations(self,instList):
+        i = 0
+        #while i < len(instList):
+
+        #    i += 1
+        return instList
+    def UpdateIrForAsm(self, instList):
+        instList = self.ExpandListOperations(instList)        
+        return instList
     def Convert(self, instList, settings):
         UpdateSettings(settings)
+        instList = self.UpdateIrForAsm(instList)
         self.includeCode = ""
         self.scopeList = [Scope(0)]
         self.tabs = ""
