@@ -6,6 +6,7 @@ CPL is a programming language designed to improve upon certain aspects of C++ th
 - In built vector maths through supporting arithmetic operations on arrays.
 - More aggressive optimisations through bending the symantics of the program, e.g replaceing small mallocs with alloca where possible.
 - Slightly improved syntax
+- Returning multiple values from a function
 
 ### Example CPL Syntax
 This code shows how to print a intiger number in CPL.
@@ -40,9 +41,12 @@ println();
 ```
 There is a example file in InputCode/RayCaster.cpl this is an example of a more complex project in cpl.
 
-### How CPL improves upon C++ so far
-- Use of i32[x] t; as opposed to int t[x];. It just makes more sense.
-- Stack arrays can be of varaible length
+### Featurs of CPL so far
+- Support for floats through f32 data type
+- Arrays
+- Pointers
+- Structs ```struct testing{i32 var;}```
+- Variable length stack arrays ```i32[x] arr;```
 
 ### Stages of compilation
 1. Pre processing, cpl uses ? to denote pre-process instruction
