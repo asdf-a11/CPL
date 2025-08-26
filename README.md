@@ -58,7 +58,7 @@ There is a example file in InputCode/RayCaster.cpl this is an example of a more 
 7. Conversion to either assembly or C++
 
 ### Running
-Use python version 3.10 and higher.
+Use python version 3.10 or higher.
 Write you program in InputCode/code.cpl then run Main_.py file to compiler.
 
 ### Current limitations
