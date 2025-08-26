@@ -5,6 +5,7 @@ CPL is a programming language designed to improve upon certain aspects of C++ th
 - Provides a simpler IR (Intermediate reprisentation) that makes it easier to embed into other applications.
 - In built vector maths through supporting arithmetic operations on arrays.
 - More aggressive optimisations through bending the symantics of the program, e.g replaceing small mallocs with alloca where possible.
+- Slightly improved syntax
 
 ### Example CPL Syntax
 This code shows how to print a intiger number in CPL.
@@ -36,16 +37,26 @@ fn void printn(i32 number){
 # Print the number 356 followed by a new line#
 printn(356);
 println();
-# Print 8 zeros to show off arrays #
-i32[8] buffer = 49;
-i32 counter = 0;
-while counter < 8{
-	printc(buffer[counter]);
-	counter = counter + 1;
-}
 ```
+There is a example file in InputCode/RayCaster.cpl this is an example of a more complex project in cpl.
+
+### How CPL improves upon C++ so far
+- Use of i32[x] t; as opposed to int t[x];. It just makes more sense.
+- Stack arrays can be of varaible length
+
+### Stages of compilation
+1. Pre processing, cpl uses ? to denote pre-process instruction
+2. Lexing, main token types are CONST, NAME, KEYWORD
+3. Parsing, the code is converted to intermediate reprisentation
+4. Generation of the controll flow graph (not fully implimented yet)
+5. Const propergation / Type propergation
+6. Breaking down operations, e.g array operations are replaced with loops that iterate of each element
+7. Conversion to either assembly or C++
 
 ### Running
 Use python version 3.10 and higher.
 Write you program in InputCode/code.cpl then run Main_.py file to compiler.
+
+### Current limitations
+Currently the code can transpile and run in C++ fine, but when compiling to assembly it may not work because const propergation is not fully implimented yet meaning varaible types cannot be propergated through the code. This is something that will be fixed soon. 
 
