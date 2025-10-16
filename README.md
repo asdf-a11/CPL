@@ -40,9 +40,9 @@ println();
 There is a example file in InputCode/RayCaster.cpl this is an example of a more complex project in cpl.
 
 ### Featurs of CPL so far
-- Support for floats through f32 data type
-- Arrays
-- Pointers
+- Support for floats through f32 data type ```f32 a = 1.0;```
+- Arrays arithmatic ```i32[10] buff=0; buff=buff*10;```
+- Pointers ```i32$ ptr = ptr2;```
 - Structs ```struct testing{i32 var;}```
 - Variable length stack arrays ```i32[x] arr;```
 
