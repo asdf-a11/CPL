@@ -23,8 +23,6 @@ fn void printn(i32 number){
 	while number != 0 or runOnceFlag == 1{
 		i32 digit = number % 10;
 		number = number / 10;
-		printc(digit + 48);
-		println();
 		buffer[pointer] = digit + 48;		
 		pointer = pointer - 1;
 		runOnceFlag = 0;
