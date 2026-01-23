@@ -1,5 +1,5 @@
 # CPL
-*CPL (chapman programming language)* 
+*CPL (Chapman programming language)* 
 CPL is a programming language designed to improve upon certain aspects of C++ these being:
 - Conditionals handerling types of varaibles / templates.
 - Provides a simpler IR (Intermediate reprisentation) that makes it easier to embed into other applications.
