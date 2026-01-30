@@ -239,8 +239,8 @@ def GenerateTokenFromConstChar(idx, splitList, tokenList):
             raise Exception("Cannot get ord value of character: " + charString)
         t = Token()
         t.tokenType = "CONST"
-        t.tokenSubset = value
-        t.tokenContent = value
+        t.tokenSubset = str(value)
+        t.tokenContent = str(value)
         tokenList.append(t)
         return 1 + len(charString) + 1  # +1 for the closing ' and opening '
     return 0
@@ -318,6 +318,7 @@ def RemoveWhiteSpace(tokenList):
             currentWhiteSpace = 0
             currentNewLine = 0
     return newTokenList
+    
 def RemoveComments(tokenList):
     #tokenList = tokenList.copy()
     comment = False

@@ -68,9 +68,12 @@ class Converter():
                 vn = f"l{len(code)+len(a)}"
                 counterNameList.append(vn)
                 b = f"[{vn}]{b}"
-                a += f"\
-{self.tabs+tabs}for(int {vn} = 0;{vn} < {s[i-1]}; {vn}++){"{"}\n\
-{self.tabs+tabs}\t{argList[1]}{b}.resize({s[i]});\n"
+                a += (
+                    f"\n{self.tabs+tabs}"
+                    f"for(int {vn} = 0; {vn} < {s[i-1]}; {vn}++){{\n"
+                    f"{self.tabs+tabs}\t{argList[1]}{b}.resize({s[i]});\n"
+                    f"{self.tabs+tabs}\n"
+                )
                 tabs += "\t"
             if len(tabs) > 0:
                 a += self.tabs + "}" * len(tabs) + "\n"
@@ -201,7 +204,7 @@ class Converter():
         code = f"{self.tabs}{argList[0]} = {argList[1]}[{argList[2]}];\n"
         return code
     def Return(self, instList, instIdx, argList):
-        code = f"{self.tabs}return {",".join(argList)};\n"
+        code = f"{self.tabs}return {','.join(argList)};\n"
         return code
     ###########
     #stuff
@@ -211,6 +214,7 @@ class Converter():
         lst = [  
             ["NOP", self.Nop] ,         
             ["MOV", self.Mov],
+            ["MOV_TYPE", None],
             ["DREF_MOV", self.DrefMov],
             ["CREATE", self.Create],
             ["CREATE_TEMP_VAR", self.Create],
@@ -284,6 +288,9 @@ using std::vector;
 //#define ui8 byte
 #define ui8 i32
 #define type char
+
+//#define or ||
+//#define and &&
 
 #define arctan std::atan
 

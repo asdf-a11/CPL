@@ -7,6 +7,7 @@ import IR
 import copy
 import Operators
 import Function
+import Propergation
 
 arithmeticInstructionNameList=[
     "+","-","/","*","%"
@@ -42,6 +43,8 @@ class DataType():
         self.typeModifiers = typeModifiers
     def fromString(self, string):
         pass
+    def toString(self):
+        return self.baseType.name + "".join(self.typeModifiers)
 class Variable():
     def __init__(self, dataType,  name):#, listSize
         self.name = name
@@ -137,7 +140,7 @@ def GetVaraibleFromScopeList(name, scopeList):
         for v in i:
             if v.name == name:
                 return v
-    raise Exception("Failed to find varaible")
+    raise Exception("Failed to find varaible " + str(name))
 def IsDataType(argument):
     for i in Types.typeList:
         if i.name == argument:
@@ -336,14 +339,9 @@ def EvaluateCompileTimeFunction(inst, scopeList):
                     raise Exception("Invalid number of arguments for _declindtype")
                 #Get type of variable
                 var = GetVaraibleFromScopeList(inst.argList[2], scopeList)
-                #if var.dataType.isPtr == 0:
-                #    raise Exception("Cannot get index type of non pointer variable")
-                #inst.argList[0] = f"{var.dataType.name}*"
-                #inst.argList[1] = "i32"
                 newInst = copy.deepcopy(inst)
-                newInst.name = "MOV"
-                newInst.argList = [inst.argList[0], 
-                        var.dataType.name + "$" * var.dataType.isPtr]
+                newInst.name = "MOV_TYPE"
+                newInst.argList = [inst.argList[0], var.dataType.toString()]
                 hasMadeChanges = True
     return hasMadeChanges, newInst
 def ReplaceVarWithKnownType(inst, scopeList):
@@ -636,8 +634,9 @@ def PerformOperations(program):
     #RemoveListSetting(instList)
     #RemoveVar_Type(instList)
     #RemoveUnknownVarType(instList)
-    EvaluateDataTypes(instList)
+    #EvaluateDataTypes(instList)
     #ConstPropergation(instList)
+    Propergation.PropergateValues(instList)
     return InstListToProgram(instList)   
     
 

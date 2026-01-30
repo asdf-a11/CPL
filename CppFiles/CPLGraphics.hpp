@@ -98,9 +98,12 @@ namespace Graphics{
         void DrawPixel(int x, int y, byte r, byte g, byte b){
             SetPixel(hdc, x, y, RGB((int)(r), (int)(g), (int)(b)));
         }
-        bool IsKeyPress(uint keyId){
-            std::cerr << "Appoligies but getting key presses on windows is not implimented yet\n";
-            return false;
+        bool IsKeyPressed(uint keyId){
+            // keyId should be a virtual‑key code (VK_*)
+            SHORT state = GetAsyncKeyState(keyId);
+
+            // The high bit (0x8000) means the key is currently down
+            return (state & 0x8000) != 0;
         }
     };
     #else
@@ -350,7 +353,11 @@ int drawpixel(int x, int y, int r, int g, int b){
     return 0;
 }
 int graphicssleep(int ticks){
-    std::this_thread::sleep_for(std::chrono::milliseconds(ticks));
+    #ifdef WIN32
+        Sleep(ticks);
+    #else
+        std::this_thread::sleep_for(std::chrono::milliseconds(ticks));
+    #endif
     return 0;
 }
 int getkeypress(int keyId){

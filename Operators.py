@@ -28,8 +28,8 @@ operatorList = [
     Operator("!=",2,2),
     Operator("and",2,1), #logic and
     Operator("or",2,1), #logic or
-    Operator("|",2,1), #bitwise or
-    Operator("&&",2,1), #bitwise and
+    Operator("orb",2,1), #bitwise or
+    Operator("andb",2,1), #bitwise and
     Operator("xor",1,1),    
     Operator("+",2,3),
     Operator("-",2,3),
@@ -58,6 +58,7 @@ operatorList = [
     Operator("##",-1,-1)#multi line comment
 ]
 operatorNameList = []
+boolOperatorNames = list("<>!") + ["and", "or", "=="]
 
 def Init():
     global MAX_BIDMAS

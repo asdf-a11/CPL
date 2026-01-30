@@ -1,9 +1,13 @@
+#Allow access to scripts in other folders
+import sys
+sys.path += [sys.path[0] + "/IRCode/"]
+
 import Lexer
 import IR
 import IRConversion
 import os
 import time
-import IROptimise
+import IRCode.IROptimise as IROptimise
 import PreProcessor
 import Settings
 import Function
@@ -53,7 +57,7 @@ def Compile(sourceCode, outputPreProcessedCode=False):
 if __name__ == "__main__":
     print("Starting")
     
-    f = open("InputCode/code.cpl","r")
+    f = open("InputCode/game.cpl","r")
     content = f.read()
     f.close()
     start = time.time()
@@ -66,11 +70,11 @@ if __name__ == "__main__":
     f.write(program)
     f.close()
     if True:
+        LINUX = False
+        argString = "-lX11" if LINUX else "-luser32 -lgdi32"
         execString = [
-            "g++ Compiled/out.cpp -lX11",# -luser32 -lgdi32
-            "./a.out"
-            #"start a.exe"
-        ]
+            f"g++ Compiled/out.cpp {argString}",
+        ] + ["./a.out"] if LINUX else ["start a.exe"]
         os.system(" && ".join(execString))
     #os.system("nasm -f bin Compiled/out.asm -o Compiled\out.bin")
     #os.system("nasm -f bin Compiled/bootloader.asm -o Compiled/bootloader.bin")
